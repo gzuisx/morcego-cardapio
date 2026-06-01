@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MORCEGO — Cardápio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #080609;
+  --bg2:   #0d0b12;
+  --bg3:   #131018;
+  --card:  #110e16;
+  --card-h:#181523;
+  --gold:  #c9a227;
+  --gold2: #8a6d18;
+  --navy:  #1a1f4b;
+  --cream: #f0e8d0;
+  --dim:   #9e9278;
+  --green: #3ecf6e;
+  --bord:  rgba(201,162,39,.12);
+  --bord2: rgba(201,162,39,.35);
+  --glow:  rgba(201,162,39,.15);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --bottom-nav-h: 68px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold2);border-radius:2px}
+
+/* ═══ CANVAS ═══ */
+#batCanvas{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.7}
+
+/* ═══ FLOATING PARTICLES ═══ */
+#floatParticles{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.fp{position:absolute;bottom:-40px;opacity:0;animation:floatUp linear forwards;will-change:transform,opacity}
+@keyframes floatUp{
+  0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:0}
+  8%{opacity:.35}
+  85%{opacity:.12}
+  100%{transform:translateY(-105vh) translateX(var(--fx,20px)) rotate(var(--fr,180deg));opacity:0}
+}
+
+/* ═══ NOISE OVERLAY ═══ */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.3;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+}
+
+/* ═══ HERO ═══ */
+#hero{
+  position:fixed;inset:0;z-index:300;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%, #1a1f4b 0%, #080609 65%);
+  cursor:pointer;
+  transition:opacity .6s ease, transform .6s ease;
+  padding:2rem;
+  padding-top:calc(2rem + var(--safe-top));
+}
+#hero.out{opacity:0;transform:translateY(-20px);pointer-events:none}
+
+.hero-bat-wrap{position:relative;margin-bottom:2rem}
+.hero-bat-wrap svg{width:min(310px,88vw);height:auto;filter:drop-shadow(0 0 35px rgba(201,162,39,.45))}
+
+/* Wing flap */
+.wl{transform-origin:-12px -4px;animation:flapL 2.4s ease-in-out infinite}
+.wr{transform-origin:12px -4px;animation:flapR 2.4s ease-in-out infinite}
+@keyframes flapL{0%,100%{transform:rotate(0deg) scaleY(1)}50%{transform:rotate(10deg) scaleY(.6)}}
+@keyframes flapR{0%,100%{transform:rotate(0deg) scaleY(1)}50%{transform:rotate(-10deg) scaleY(.6)}}
+
+/* Eye blink */
+.eye-iris{transform-origin:0px 6px;animation:blink 6s ease-in-out infinite}
+@keyframes blink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(.06)}}
+
+/* Sonar rings */
+.sr{transform-origin:0px 6px;animation:sonar 2.8s ease-out infinite}
+.sr2{animation-delay:.93s}
+.sr3{animation-delay:1.86s}
+@keyframes sonar{0%{transform:scale(.7);opacity:.65}100%{transform:scale(3);opacity:0}}
+
+.hero-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.8rem,12vw,5rem);
+  font-weight:900;letter-spacing:.15em;
+  color:var(--cream);text-align:center;line-height:1;
+  text-shadow:0 0 40px rgba(201,162,39,.3);
+}
+.hero-sub{
+  font-size:.72rem;letter-spacing:.4em;text-transform:uppercase;
+  color:var(--dim);font-family:'DM Mono',monospace;
+  margin-top:.6rem;margin-bottom:2.5rem;text-align:center;
+}
+.hero-cta{
+  background:var(--gold);color:var(--bg);
+  border:none;border-radius:50px;
+  padding:.9rem 2.5rem;
+  font-family:'DM Sans',sans-serif;font-weight:600;
+  font-size:.85rem;letter-spacing:.12em;text-transform:uppercase;
+  cursor:pointer;
+  box-shadow:0 0 30px rgba(201,162,39,.4);
+  transition:all .2s;
+  animation:heroPulse 2s ease-in-out infinite;
+}
+.hero-cta:active{transform:scale(.96)}
+@keyframes heroPulse{0%,100%{box-shadow:0 0 30px rgba(201,162,39,.4)}50%{box-shadow:0 0 55px rgba(201,162,39,.75)}}
+.hero-hint{font-size:.65rem;color:var(--dim);margin-top:1rem;letter-spacing:.1em;opacity:.6}
+.hero-address{font-size:.65rem;color:var(--dim);letter-spacing:.06em;margin-top:.4rem;margin-bottom:1.5rem;text-align:center;opacity:.75}
+.dot.closed{background:#e53e3e!important;box-shadow:0 0 6px #e53e3e!important}
+.status-txt.closed{color:#e53e3e!important}
+
+/* ═══ APP WRAPPER ═══ */
+#app{position:relative;z-index:10;padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom))}
+
+/* ═══ HEADER ═══ */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(8,6,9,.95);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--bord);
+  padding-top:var(--safe-top);
+}
+.header-inner{
+  display:flex;align-items:center;gap:.8rem;
+  padding:.75rem 1rem;max-width:1400px;margin:0 auto;
+}
+.header-bat{width:36px;height:26px;flex-shrink:0;position:relative}
+.header-bat svg{width:100%;height:100%}
+.hbw-l{transform-origin:-4px 0px;animation:flapL 2.4s ease-in-out infinite}
+.hbw-r{transform-origin:4px 0px;animation:flapR 2.4s ease-in-out infinite}
+.sonar-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.sonar-h{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--gold);opacity:0;
+  animation:sonarH 3s ease-out infinite;pointer-events:none;
+}
+.sonar-h2{animation-delay:1s}
+.sonar-h3{animation-delay:2s}
+@keyframes sonarH{0%{transform:translate(-50%,-50%) scale(.5);opacity:.6}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}}
+.header-name{
+  font-family:'Playfair Display',serif;
+  font-size:1.15rem;font-weight:900;
+  letter-spacing:.1em;color:var(--gold);
+  text-transform:uppercase;line-height:1;
+}
+.header-status{display:flex;align-items:center;gap:5px;margin-left:auto}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 6px var(--green);animation:dotPulse 2s infinite}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.5}}
+.status-txt{font-size:.62rem;font-family:'DM Mono',monospace;color:var(--green);letter-spacing:.08em}
+.header-search-btn{
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--bord);background:transparent;
+  color:var(--dim);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;flex-shrink:0;
+}
+.header-search-btn:active{background:var(--glow);color:var(--gold);border-color:var(--bord2)}
+.search-bar{
+  position:absolute;top:100%;left:0;right:0;
+  background:var(--bg2);border-bottom:1px solid var(--bord);
+  padding:.75rem 1rem;
+  display:none;z-index:99;
+}
+.search-bar.open{display:block}
+.search-input{
+  width:100%;background:var(--bg3);border:1px solid var(--bord);
+  border-radius:8px;padding:.6rem 1rem .6rem 2.4rem;
+  color:var(--cream);font-family:'DM Sans',sans-serif;
+  font-size:.85rem;outline:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a6d18' stroke-width='2.5' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:10px center;
+}
+.search-input::placeholder{color:var(--dim)}
+.search-input:focus{border-color:var(--gold2)}
+.header-search-desktop{flex:1;max-width:320px;margin-left:auto;display:none}
+.header-search-desktop .search-input{background-image:url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a6d18' stroke-width='2.5' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+
+/* ═══ BOTTOM NAV (mobile) ═══ */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(8,6,9,.97);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--bord);
+  overflow-x:auto;scrollbar-width:none;
+  padding:0 .5rem;
+  padding-bottom:var(--safe-bottom);
+  height:calc(var(--bottom-nav-h) + var(--safe-bottom));
+  display:flex;align-items:center;
+}
+.bottom-nav::-webkit-scrollbar{display:none}
+.bottom-nav-inner{display:flex;gap:.3rem;white-space:nowrap;padding:.5rem 0}
+.bnav-item{
+  display:inline-flex;flex-direction:column;align-items:center;gap:2px;
+  padding:.4rem .7rem;border-radius:10px;cursor:pointer;
+  text-decoration:none;color:var(--dim);
+  font-size:.58rem;letter-spacing:.05em;
+  border:1px solid transparent;
+  transition:all .2s;white-space:nowrap;min-width:52px;
+  -webkit-touch-callout:none;user-select:none;
+}
+.bnav-item .bnav-icon{font-size:1.2rem;line-height:1;transition:transform .2s}
+.bnav-item:active .bnav-icon{transform:scale(.8)}
+.bnav-item.active{color:var(--gold);background:var(--glow);border-color:var(--bord2)}
+
+/* ═══ LAYOUT ═══ */
+.layout{max-width:1400px;margin:0 auto;display:flex;align-items:flex-start}
+
+/* ═══ SIDEBAR (desktop only) ═══ */
+.sidebar{display:none}
+
+/* ═══ MAIN ═══ */
+.main{flex:1;padding:1.2rem 1rem 2rem;min-width:0}
+
+/* ═══ SECTION ═══ */
+.section{margin-bottom:2.5rem;opacity:0;transform:translateY(16px);animation:fadeUp .5s forwards}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.section:nth-child(1){animation-delay:.05s}.section:nth-child(2){animation-delay:.1s}
+.section:nth-child(3){animation-delay:.15s}.section:nth-child(4){animation-delay:.2s}
+.section:nth-child(5){animation-delay:.25s}.section:nth-child(6){animation-delay:.3s}
+.section:nth-child(7){animation-delay:.35s}.section:nth-child(8){animation-delay:.4s}
+.section:nth-child(9){animation-delay:.45s}.section:nth-child(10){animation-delay:.5s}
+.section:nth-child(11){animation-delay:.55s}.section:nth-child(12){animation-delay:.6s}
+.section-header{
+  display:flex;align-items:center;gap:.7rem;
+  margin-bottom:1rem;padding-bottom:.8rem;
+  border-bottom:1px solid var(--bord);
+}
+.section-emoji{font-size:1.2rem}
+.section-title{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;color:var(--cream);line-height:1}
+.section-count{font-size:.6rem;font-family:'DM Mono',monospace;color:var(--gold2);letter-spacing:.15em;text-transform:uppercase;margin-left:auto}
+
+/* ═══ GRID ═══ */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.grid-wide{grid-template-columns:1fr 1fr}
+
+/* ═══ CARD ═══ */
+.card{
+  background:var(--card);border:1px solid var(--bord);
+  border-radius:10px;overflow:hidden;cursor:pointer;
+  display:flex;flex-direction:column;
+  transition:border-color .2s;
+  -webkit-touch-callout:none;user-select:none;
+}
+.card:active{border-color:var(--bord2);background:var(--card-h)}
+.card-img{width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--bg3);flex-shrink:0;position:relative}
+.card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.card:active .card-img img{transform:scale(1.04)}
+.card-tag{
+  position:absolute;top:6px;left:6px;
+  background:rgba(8,6,9,.85);border:1px solid var(--bord2);
+  color:var(--gold);font-size:.52rem;font-family:'DM Mono',monospace;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 6px;border-radius:3px;
+}
+.card-tag.vegano{color:#5ecf6e;border-color:rgba(94,207,110,.4)}
+.card-body{padding:.7rem;display:flex;flex-direction:column;gap:.3rem;flex:1}
+.card-name{font-family:'Playfair Display',serif;font-size:.88rem;font-weight:700;color:var(--cream);line-height:1.2}
+.card-desc{font-size:.68rem;color:var(--dim);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.card-footer{display:flex;align-items:flex-end;justify-content:space-between;margin-top:.4rem}
+.card-price{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--gold)}
+.card-price-prefix{font-size:.55rem;font-weight:500;color:var(--gold2);letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:1px;font-family:'DM Sans',sans-serif}
+.card-btn{
+  width:26px;height:26px;border-radius:50%;
+  border:1px solid var(--bord2);background:transparent;
+  color:var(--gold);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;transition:all .2s;flex-shrink:0;
+}
+.card-btn:active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+
+/* ═══ MODAL ═══ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.9);
+  display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--bg3);
+  border:1px solid var(--bord2);
+  border-radius:18px 18px 0 0;
+  width:100%;max-height:92vh;
+  overflow-y:auto;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  padding-bottom:calc(1.5rem + var(--safe-bottom));
+  position:relative;
+}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:var(--bord2);border-radius:2px;margin:12px auto 0}
+.modal-img{width:calc(100% - 2rem);aspect-ratio:4/3;background:var(--bg2);overflow:hidden;margin-top:.75rem;border-radius:10px;margin-left:1rem;}
+.modal-img img{width:100%;height:100%;object-fit:cover;display:block}
+.modal-body{padding:1.2rem 1rem}
+.modal-cat{font-size:.58rem;font-family:'DM Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--gold2)}
+.gold-line{width:32px;height:2px;background:linear-gradient(to right,var(--gold),transparent);margin:.4rem 0;border-radius:1px}
+.modal-name{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--cream);line-height:1.1;letter-spacing:-.01em;margin-bottom:.6rem}
+.modal-desc{font-size:.82rem;color:var(--dim);line-height:1.65;margin-bottom:1rem}
+
+/* ═══ EXTRAS/VARIANTS ═══ */
+.modal-extras{margin-bottom:1.2rem}
+.extras-section{margin-bottom:.9rem}
+.extras-section-title{
+  font-size:.58rem;font-family:'DM Mono',monospace;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:.5rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+.extras-section-title::after{content:'';flex:1;height:1px;background:var(--bord)}
+.extras-chips{display:flex;flex-wrap:wrap;gap:.35rem}
+.extra-chip{
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.3rem .65rem;border-radius:20px;
+  border:1px solid var(--bord);background:var(--bg2);
+  font-size:.68rem;color:var(--dim);font-family:'DM Sans',sans-serif;
+  cursor:default;transition:all .15s;
+}
+.extra-chip .extra-price{
+  color:var(--gold);font-family:'DM Mono',monospace;
+  font-size:.62rem;font-weight:500;
+}
+.extra-chip.free .extra-price{color:var(--green)}
+.extra-chip.select-chip{cursor:pointer;}
+.extra-chip.select-chip.selected{border-color:var(--bord2);background:var(--glow);color:var(--cream)}
+.extra-chip.select-chip:active{transform:scale(.95)}
+
+.modal-footer{display:flex;align-items:center;justify-content:space-between;padding-top:1rem;border-top:1px solid var(--bord);gap:.7rem}
+.modal-price-label{font-size:.58rem;font-family:'DM Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--gold2);display:block;margin-bottom:2px}
+.modal-price{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--gold);letter-spacing:-.02em}
+.modal-order-btn{
+  background:var(--gold);color:var(--bg);border:none;
+  border-radius:50px;padding:.75rem 1.5rem;
+  font-family:'DM Sans',sans-serif;font-weight:600;
+  font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+  box-shadow:0 4px 20px rgba(201,162,39,.35);
+  white-space:nowrap;
+}
+.modal-order-btn:active{transform:scale(.97)}
+.modal-wpp-btn{
+  display:flex;align-items:center;gap:.4rem;
+  padding:.75rem 1rem;border-radius:50px;
+  border:1px solid rgba(37,211,102,.3);
+  background:rgba(37,211,102,.08);
+  color:#25d366;font-size:.75rem;font-weight:600;
+  font-family:'DM Sans',sans-serif;letter-spacing:.04em;
+  cursor:pointer;text-decoration:none;
+  transition:all .2s;white-space:nowrap;
+}
+.modal-wpp-btn:active{background:rgba(37,211,102,.18)}
+.modal-close-btn{
+  position:absolute;top:.75rem;right:1rem;
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid var(--bord2);background:rgba(8,6,9,.7);
+  color:var(--cream);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;
+}
+
+/* ═══ TAP BATS CONTAINER ═══ */
+#tapBats{position:fixed;inset:0;pointer-events:none;z-index:150;overflow:hidden}
+.tap-bat{position:absolute;pointer-events:none;will-change:transform,opacity}
+
+/* ═══ DESKTOP OVERRIDES ═══ */
+@media(min-width:768px){
+  #app{padding-bottom:0}
+  .bottom-nav{display:none}
+  .sidebar{
+    display:block;width:200px;flex-shrink:0;
+    position:sticky;top:72px;
+    padding:1.5rem 1rem 1.5rem 0;
+    max-height:calc(100vh - 72px);overflow-y:auto;
+  }
+  .sidebar::-webkit-scrollbar{width:2px}
+  .sidebar-label{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold2);font-family:'DM Mono',monospace;margin-bottom:.8rem;padding-left:.6rem}
+  .nav-item{
+    display:flex;align-items:center;gap:.5rem;
+    padding:.5rem .6rem;border-radius:6px;cursor:pointer;
+    transition:all .2s;border:1px solid transparent;
+    margin-bottom:2px;text-decoration:none;
+    color:var(--dim);font-size:.78rem;white-space:nowrap;
+  }
+  .nav-item:hover{background:var(--glow);color:var(--cream);border-color:var(--bord)}
+  .nav-item.active{background:var(--glow);color:var(--gold);border-color:var(--bord2);font-weight:600}
+  .nav-item .ni{font-size:.85rem;flex-shrink:0}
+  .main{padding:1.5rem 0 2rem 1.5rem;border-left:1px solid var(--bord)}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem}
+  .grid-wide{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+  .modal-overlay{align-items:center;padding:1rem}
+  .modal{border-radius:14px;max-width:520px;width:100%;max-height:88vh;transform:scale(.95) translateY(8px)}
+  .modal-overlay.open .modal{transform:scale(1) translateY(0)}
+  .modal-img{width:calc(100% - 2rem);margin-left:1rem;border-radius:10px}
+  .header-search-btn{display:none}
+  .header-search-desktop{display:block}
+  .header-status{display:flex}
+  .header-inner{gap:1rem;padding:.9rem 1.5rem}
+}
+@media(min-width:1024px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .grid-wide{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<canvas id="batCanvas"></canvas>
+<div id="floatParticles"></div>
+
+<!-- ════ HERO ════ -->
+<div id="hero">
+  <div class="hero-bat-wrap">
+    <!-- Morcego SVG v5: asas se originam na altura da cabeça, trailing edge desce como capa -->
+    <svg viewBox="-165 -88 330 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="hglow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="eglow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="ng" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1a1f4b"/><stop offset="100%" stop-color="#080609"/></radialGradient>
+        <linearGradient id="wg" x1="0%" y1="0%" x2="10%" y2="100%">
+          <stop offset="0%" stop-color="#f5edce"/>
+          <stop offset="45%" stop-color="#c8a84a"/>
+          <stop offset="100%" stop-color="#6a4a10"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Sonar rings ao redor do terceiro olho -->
+      <circle class="sr"     cx="0" cy="24" r="28" stroke="#c9a227" stroke-width="1"   fill="none"/>
+      <circle class="sr sr2" cx="0" cy="24" r="28" stroke="#c9a227" stroke-width=".6"  fill="none"/>
+      <circle class="sr sr3" cx="0" cy="24" r="28" stroke="#c9a227" stroke-width=".35" fill="none"/>
+
+      <!-- SILHUETA MORCEGO v8: cabeça pequena, asas dominam — proporção real de morcego -->
+      <path d="
+        M 0,-54
+        L 10,-74 L 17,-50
+        C 17,-44 17,-38 15,-28
+        C 28,-26 50,-30 75,-36
+        C 100,-40 128,-32 150,-16
+        C 155,-6 152,8 140,20
+        C 120,32 90,34 62,28
+        C 42,22 24,14 15,4
+        C 12,10 10,20 8,34
+        L 0,42
+        L -8,34
+        C -10,20 -12,10 -15,4
+        C -24,14 -42,22 -62,28
+        C -90,34 -120,32 -140,20
+        C -152,8 -155,-6 -150,-16
+        C -128,-32 -100,-40 -75,-36
+        C -50,-30 -28,-26 -15,-28
+        C -17,-38 -17,-44 -17,-50
+        L -10,-74 L 0,-54 Z
+      " fill="url(#wg)" filter="url(#hglow)"/>
+
+      <!-- Interior das orelhas -->
+      <polygon points="1,-56 10,-70 15,-52" fill="rgba(201,162,39,.35)"/>
+      <polygon points="-1,-56 -10,-70 -15,-52" fill="rgba(201,162,39,.35)"/>
+
+      <!-- Nervuras das asas -->
+      <line x1="15" y1="-26" x2="145" y2="-14" stroke="#5a3c0a" stroke-width=".9" opacity=".55"/>
+      <line x1="15" y1="-22" x2="120"  y2="26" stroke="#5a3c0a" stroke-width=".7" opacity=".42"/>
+      <line x1="15" y1="-28" x2="72"  y2="-36" stroke="#5a3c0a" stroke-width=".6" opacity=".38"/>
+      <line x1="-15" y1="-26" x2="-145" y2="-14" stroke="#5a3c0a" stroke-width=".9" opacity=".55"/>
+      <line x1="-15" y1="-22" x2="-120"  y2="26" stroke="#5a3c0a" stroke-width=".7" opacity=".42"/>
+      <line x1="-15" y1="-28" x2="-72"  y2="-36" stroke="#5a3c0a" stroke-width=".6" opacity=".38"/>
+
+      <!-- OLHOS VERMELHOS (cabeça pequena, y≈-40) -->
+      <circle cx="-7"  cy="-38" r="4.5" fill="#cc2211" filter="url(#hglow)"/>
+      <circle cx=" 7"  cy="-38" r="4.5" fill="#cc2211" filter="url(#hglow)"/>
+      <circle cx="-7"  cy="-38" r="2.2" fill="#1a0500"/>
+      <circle cx=" 7"  cy="-38" r="2.2" fill="#1a0500"/>
+      <circle cx="-6"  cy="-40" r=".9" fill="rgba(255,90,60,.9)"/>
+      <circle cx=" 8"  cy="-40" r=".9" fill="rgba(255,90,60,.9)"/>
+
+      <!-- PRESAS -->
+      <line x1="-4" y1="-22" x2="-4.5" y2="-14" stroke="#f5edce" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+      <line x1=" 4" y1="-22" x2=" 4.5" y2="-14" stroke="#f5edce" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+
+      <!-- TERCEIRO OLHO no torso -->
+      <circle cx="0" cy="8" r="20" fill="rgba(26,31,75,.55)" filter="url(#eglow)"/>
+      <circle cx="0" cy="8" r="14" stroke="#c9a227" stroke-width="2.5" fill="url(#ng)" filter="url(#hglow)"/>
+      <ellipse class="eye-iris" cx="0" cy="8" rx="8.5" ry="9.5" fill="#1a1f4b"/>
+      <ellipse cx="0" cy="8" rx="4" ry="4.5" fill="#060412"/>
+      <circle cx="2.5" cy="4.5" r="1.8" fill="#c9a227" opacity=".9"/>
+      <line x1="0" y1="-7"  x2="0" y2="-5"  stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
+      <line x1="0" y1="23"  x2="0" y2="21"  stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
+      <line x1="-15" y1="8" x2="-12.5" y2="8" stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
+      <line x1=" 15" y1="8" x2=" 12.5" y2="8" stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
+    </svg>
+  </div>
+  <h1 class="hero-title">MORCEGO</h1>
+  <p class="hero-sub">Lanchonete · Santo André · SP</p>
+  <p class="hero-address">📍 R. [ENDEREÇO] — Santo André &nbsp;·&nbsp; 🕕 18h às 23:59</p>
+  <button class="hero-cta" id="heroCta">Ver Cardápio</button>
+  <p class="hero-hint">toque em qualquer lugar</p>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="sonar-wrap header-bat">
+        <div class="sonar-h"></div>
+        <div class="sonar-h sonar-h2"></div>
+        <div class="sonar-h sonar-h3"></div>
+        <svg viewBox="-38 -32 76 50" fill="none">
+          <path class="hbw-l" d="M-4,-2 C-12,-10 -24,-16 -35,-12 C-28,-6 -18,2 -8,6 C-5,7 -4,4 -4,1Z" fill="#c9a227"/>
+          <path class="hbw-r" d="M4,-2 C12,-10 24,-16 35,-12 C28,-6 18,2 8,6 C5,7 4,4 4,1Z" fill="#c9a227"/>
+          <path d="M-5,-12 L-8,-24 L-2,-14Z" fill="#c9a227"/>
+          <path d="M5,-12 L8,-24 L2,-14Z" fill="#c9a227"/>
+          <ellipse cx="0" cy="-5" rx="5.5" ry="8" fill="#c9a227"/>
+          <!-- mini third eye -->
+          <circle cx="0" cy="4" r="4" stroke="#c9a227" stroke-width="1" fill="#1a1f4b"/>
+          <circle cx="0" cy="4" r="2" fill="#080609"/>
+          <circle cx=".7" cy="3" r=".7" fill="#c9a227" opacity=".9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="header-name">Morcego</div>
+      </div>
+      <div class="header-status">
+        <span class="dot" id="statusDot"></span>
+        <span class="status-txt" id="statusTxt">Aberto</span>
+      </div>
+      <div class="header-search-desktop">
+        <input class="search-input" type="text" placeholder="Buscar no cardápio..." id="searchDesktop">
+      </div>
+      <button class="header-search-btn" id="searchToggle" aria-label="Buscar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+    </div>
+    <div class="search-bar" id="searchBar">
+      <input class="search-input" type="text" placeholder="Buscar no cardápio..." id="searchMobile">
+    </div>
+  </header>
+
+  <nav class="bottom-nav"><div class="bottom-nav-inner" id="bottomNav"></div></nav>
+
+  <div class="layout">
+    <aside class="sidebar"><div class="sidebar-label">Cardápio</div><nav id="sidebarNav"></nav></aside>
+    <main class="main" id="mainContent"></main>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <button class="modal-close-btn" id="modalClose">✕</button>
+    <div class="modal-handle"></div>
+    <div class="modal-img" id="modalImg"></div>
+    <div class="modal-body">
+      <div class="modal-cat" id="modalCat"></div>
+      <div class="gold-line"></div>
+      <h2 class="modal-name" id="modalName"></h2>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="modal-extras" id="modalExtras"></div>
+      <div class="modal-footer">
+        <div>
+          <span class="modal-price-label" id="modalPriceLabel">Valor</span>
+          <span class="modal-price" id="modalPrice"></span>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <a class="modal-wpp-btn" id="modalWpp" href="#" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Pedir
+          </a>
+          <button class="modal-order-btn" id="modalOrderBtn">Pedir agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tapBats"></div>
+
+<script>
+// ══ WHATSAPP NUMBER — trocar pelo número real ══
+const WPP_NUMBER = '5511999999999'; // ← altere para o número do Morcego
+
+// ══ DATA ══
+const Z  = 'https://zig-public.zig.fun/images/';
+const ZF = 'https://zig-public-files.zig.fun/images/';
+
+// extras format: [{title, type:'add'|'select', opts:[{name, price?}]}]
+const categories = [
+  { id:'lojinha', icon:'🛍️', name:'Lojinha', items:[
+    { name:'CAMISETA MOCERGO KISS', desc:'Camiseta exclusiva Mocergo. Edição Kiss.', price:'R$100,00', prefix:'A partir de',
+      img:ZF+'5374b397e434454cc51f5b68cf6385f09d99a74d35ddb7cb9a2fb579daf28748.jpg',
+      extras:[{title:'TAMANHO',type:'select',opts:[{name:'P–M–G (incluso)'},{name:'CAMISETA XG',price:'+R$10,00'}]}] },
+    { name:'CAMISETA 7 ANOS MOCERGO', desc:'Camiseta comemorativa dos 7 anos de Mocergo.', price:'R$110,00',
+      img:ZF+'3cdb7b5414de7e7af454df8e6935a438c33bf44f3b962f5fa8e4151c6da807c8.jpg' },
+    { name:'SERIGRAFIA MOCERGO', desc:'Arte em serigrafia. Tamanho: 67cm x 50cm.', price:'R$120,00',
+      img:ZF+'8a6d748e57409fd604f7d9123c2aa10ba3bc5ededcfd728fcc6acfd5859a5765.jpg' }
+  ]},
+  { id:'destaques', icon:'⭐', name:'Destaques', wide:true, items:[
+    { name:'ARANCINI DE CALABRESA', desc:'Arancini de calabresa com parmesão. [4 unidades]', price:'R$44,90',
+      img:ZF+'6041d7af90ba6e0de6a99a9c08dd0f101a6c71d7ead94b193c605dcdc3a20620.jpg' },
+    { name:'GALINHO XIKILIRO', desc:'Sobrecoxa de frango empanada, com molho barbecue artesanal. Sabores da cidade.', price:'R$33,60',
+      img:ZF+'3c933473f78d9945afe6309fb917924de95d64233f0d7c39958fb1d53a6de20d.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[{name:'BACON',price:'+R$7,00'},{name:'QUEIJO EXTRA',price:'+R$7,00'},{name:'BATATA SIDE',price:'+R$10,00'}]}] }
+  ]},
+  { id:'cervejas', icon:'🍺', name:'Cervejas', items:[
+    { name:'CHOPP PILSEN', desc:'Chopp pilsen gelado.', price:'R$18,00',
+      img:Z+'202488d8ac6b10527221f6ad3bc83143f0f6a3bbc120a754fbc4b7234ad703df.jpg' },
+    { name:'Chopp Ratazana IPA', desc:'Chopp IPA de fabricação própria.', price:'R$25,00',
+      img:Z+'7a66566d04c895a7938939fde785c03f419f2d55939fb739407caae6e3e1168c.jpg' },
+    { name:'HEINEKEN (330ml)', desc:'A clássica verde. +18.', price:'R$16,00',
+      img:Z+'b1ce5310e57845176b8ece0261522d4ae4ef3e2c60d871b4f36b2ea94fb6e832.jpg' },
+    { name:'CORONA (330ml)', desc:'Leve e refrescante. +18.', price:'R$17,00', prefix:'A partir de',
+      img:Z+'7cc0193d72085d64ec31a6bab23aa5ef1f6731fd1307430a920ddafc9b7fac37.jpg',
+      extras:[{title:'OPÇÕES',type:'add',opts:[{name:'LIMÃO',price:'Grátis'}]}] },
+    { name:'PURE GOLD', desc:'Stella Artois sem glúten. +18.', price:'R$16,00',
+      img:Z+'035a2158766e696cbcaea80889fd4dd9bf86232485679d0db5dc98395db1bc8d.jpg' }
+  ]},
+  { id:'drinks-autorais', icon:'🍹', name:'Drinks Autorais', wide:true, items:[
+    { name:'Encuentro', desc:'Gin Gringo, coentro, limão tahiti, xarope de manga, suco de manga, borda de sal e coentro.', price:'R$35,00', img:Z+'f5fcbf7d547ec89a06204c6269a172d39098e32d615487c93beb4557da6f0e20.jpg' },
+    { name:'Lixinho', desc:'Gin Gringo, xarope de lichia, chá de hibisco, limão siciliano e aquafaba.', price:'R$35,00', img:Z+'bb679865b088d04d474b3bdc9a2b7b5b134019472a18d40925b01f0f19d7520c.jpg' },
+    { name:'Artemísia', desc:'Gin Bombay infusionado em canela, Amaretto, limão siciliano e aquafaba.', price:'R$35,00', img:Z+'4e7eee6d1eaa3c4b80cb52e713463d7d35690c917772161a01915c9f6e63882f.jpg' },
+    { name:'CAMI SOUR', desc:'Bourbon, chá matte, cordial de gengibre, limão siciliano e aquafaba.', price:'R$35,00', img:Z+'20db9b671aa635770e100aaabcd9bbbb46049caafa08f49410234745d07a4b7c.jpg' },
+    { name:'MATO SANTO', desc:'Gin Bombay, cordial de capim santo, sumo de limão e aquafaba.', price:'R$35,00', img:Z+'f65ff44b45370e7d81e2afa6fe447869398ea34189480859e1eab7e47825764b.jpg' },
+    { name:'Pula Pirata', desc:'Rum Prata, Rum Ouro, xarope de toranja, xarope de capim santo, suco de limão.', price:'R$35,00', img:Z+'8447a67a3b691b072960777d7318752693849e0c70abd26f45e36265d61203a7.jpg' },
+    { name:'CABARÉ', desc:'Fireball, Steinhager, Xarope de açúcar, Limão siciliano, Aquafaba.', price:'R$35,00', img:Z+'bd73dd914e54853477ffc9d86e0010a253261af9b6c8c404e047cee2ba101435.jpg' },
+    { name:'MARACARU', desc:'Gin, tequila, polpa de maracujá, limão siciliano, xarope de açúcar e aquafaba.', price:'R$35,00', img:Z+'eb42ab5e8a61035c6e158b1e12348385c06475c76c2158d23f21a72c89b68a23.jpg' },
+    { name:'CABAQUI', desc:'Whisky bourbon, suco de abacaxi, xarope de hortelã e limão siciliano.', price:'R$35,00', img:Z+'825e0a81961a8f3f27d8551af87ccd02b409dfbf7011dd6edeba778822966ed9.jpg' },
+    { name:'PARANGA', desc:'Gin, xarope artesanal de manjericão, uva verde macerada e limão.', price:'R$35,00', img:ZF+'8299906ca0629ccccf8441ef1e1092518d9dd287980d71ec0dfbad696eac7bf9.jpg' }
+  ]},
+  { id:'drinks', icon:'🥂', name:'Drinks', wide:true, items:[
+    { name:'Amareto Sour', desc:'Amaretto, suco de limão siciliano, aquafaba e angostura.', price:'R$32,00', img:Z+'beabce706d5b55d75c779b18a6fb8c6bcc930e4ff27a751f12ad96e5c6c80c92.jpg' },
+    { name:'NEGRONI', desc:'Campari, gin, vermute rosso e pele de laranja.', price:'R$35,00', img:Z+'98ce9131caf2913a73fcd378a24381d5716abe10bc597777c16297f8ba4b812c.jpg' },
+    { name:'BOULEVARDIER', desc:'Campari, bourbon, vermute rosso e pele de laranja.', price:'R$35,00', img:Z+'98ce9131caf2913a73fcd378a24381d5716abe10bc597777c16297f8ba4b812c.jpg' },
+    { name:'Jameson com Chá', desc:'Jameson, chá mate e limão.', price:'R$35,00', img:Z+'1e0fdc76e90ddda3b5cf66dfa4c1a28560627e2d1e8284451875feb59c45fd18.jpg' },
+    { name:'Aperol Sour', desc:'Aperol, Whiskey bourbon, xarope de açúcar, suco de laranja, limão e aquafaba.', price:'R$35,00', img:Z+'996ddc1b2c634874cf75b6ed731d6ec64b15ab489cb06fe8a719fffaf0323bc1.jpg' },
+    { name:'Aperol Spritz', desc:'Aperol, espumante e água com gás.', price:'R$35,00', img:Z+'38e36db01891b11c9158b5409e6cda3645839337e5ee1d23c633a92c3cf860f8.jpg' },
+    { name:'KARIRI MEL E LIMÃO', desc:'Kariri (cachaça cearense), com mel e limão.', price:'R$15,00', prefix:'A partir de',
+      img:Z+'bb559cc64745741fdd8279fefc2acfa98a0be4906cd606621328079e975d66c3.jpg',
+      extras:[{title:'OPÇÕES',type:'add',opts:[{name:'GELO',price:'Grátis'}]}] },
+    { name:'Mamba Negra', desc:'Gin Bombay, limão siciliano, cachaça de gengibre, xarope de toranja e capim santo.', price:'R$35,00', img:Z+'3849b3c74114dd3ea6a141f3afd3ebc27ee052782eebd9e97100fe01d6758cd1.jpg' },
+    { name:'Blood Mary', desc:'Vodka e suco de tomate temperada. Acompanha bacon frita (OPCIONAL).', price:'R$36,00', prefix:'A partir de',
+      img:Z+'d3122092a6a30fefd47a6ed2cf7abce89a47297516ae5b6a1606d862dfc5d1f3.jpg',
+      extras:[{title:'ADICIONAL',type:'add',opts:[{name:'BACON',price:'Grátis'}]}] },
+    { name:'Moscou Mula?', desc:'Vodka, limão, xarope de açúcar, angostura e espuma de gengibre.', price:'R$29,90', img:Z+'43b66c678bda3c20847c5ca21153eb24ba34a649502c61a33a72ff5fc2bd642a.jpg' },
+    { name:'Bombeirinho de Madame', desc:'Cachaça, xarope de groselha, limão e essência de groselha.', price:'R$28,00', img:Z+'4108e82551e42366ed89d9775023234b718b65886d83f6391040e28d1bba2a2b.jpg' },
+    { name:'Café Pint com Rum', desc:'Bacardi carta ouro, café expresso, tônica, limão e xarope de gengibre.', price:'R$32,00', img:Z+'fda91fb9ee5db8ea1fb91fcb4eae832d5797d22ed90f6f45bd25f066c48c575c.jpg' },
+    { name:'New York Sour', desc:'Bourbon, limão siciliano, xarope de açúcar, angostura, aquafaba e vinho.', price:'R$35,00', img:Z+'1a43636ce1af5279a93ebf589ca763ae948d3382e96dff2751c7322b7befa333.jpg' },
+    { name:'Caipirinha Jorge Amado', desc:'Cachaça Gabriela, limão e maracujá.', price:'R$34,00', img:Z+'399a77b48df25901d9dfd54aa9dd1f60d072f289a227837ee3aa184c40cad0ba.jpg' },
+    { name:'Old Fashioned', desc:'Whisky (bourbon), angostura, açúcar, água com gás.', price:'R$35,00', img:Z+'3ba8cd34c7a08468233f9aa049bdad3db9fc4a58a5a8f817780dd4e0d2db6241.jpg' },
+    { name:'Caipirinha Tradiça', desc:'Cachaça, limão e açúcar.', price:'R$30,00', img:Z+'b73aa7c0dbc497434cf62e261a757027aa1aac68309e62f293fb69eda54112f3.jpg' },
+    { name:'Penicillin', desc:'Whiskey bourbon, limão siciliano, xarope de mel e gengibre. É foda!', price:'R$35,00', img:Z+'c9007a69e3393b5c31249e8bc6094887ad0738fede06d5d11b92267f4e3c9797.jpg' },
+    { name:'Rabo de Galo', desc:'Cachaça Salinas, vermute rosso, Cynar e pele de laranja.', price:'R$20,00', img:Z+'14668fb6eb53cf29fad496c0e4f38989f112dbbadaffd3748de527b9b3d9bf7d.jpg' },
+    { name:'CAMBALHOTA NA DESCIDA', desc:'Cachaça de jambu, cachaça de gengibre, cachaça salinas e limão.', price:'R$28,00', img:Z+'a4d1113ea572335bbaf16ba7a78adfa91016be3dc54f0c7fa942db43732267fb.jpg' },
+    { name:'Sweet Manhattan', desc:'Bourbon, vermouth rosso e xarope de cereja.', price:'R$35,00', img:Z+'147e55384d38c9bce2511bbf957c4af3b6e2897659b13d454a28a7923600fa62.jpg' },
+    { name:'Campari Tônica', desc:'Campari, tônica e laranja.', price:'R$28,00', img:Z+'d4604dbe1eb4e2b08f9f21bb08bd50cc4431316d2747f37dcd9fd9f9f03d6f88.jpg' },
+    { name:'Citrus Martini', desc:'Aperol, gin, limão siciliano e xarope de açúcar.', price:'R$32,00', img:Z+'9d8e25e292d1b0c909b621f7acbcc51177b1064e354bcecd2005fe315dc0bfba.jpg' },
+    { name:'Tom Collins', desc:'Gin Bombay, limão siciliano, xarope de açúcar, água com gás.', price:'R$35,00', img:Z+'2a969c2edf94d8afe78746b46fcaaa6b3cce29185ff36bd69fd566b6eecc371e.jpg' },
+    { name:'Clover Club', desc:'Gin, xarope de framboesa, limão siciliano e aquafaba, borda de pó de hibisco.', price:'R$38,00', img:Z+'86623e44871d74cfda6bb2e736b2ba471d57da61c49dd278ef6ff839857ece8c.jpg' },
+    { name:'Cosmopolitan', desc:'Vodka, licor de laranja, limão siciliano, xarope de cranberry e solução salina.', price:'R$35,00', img:Z+'ba61beec9025653dfdd625792b3aebc79d0cbd80c11101f09aad93337591f0bb.jpg' },
+    { name:'Cuba Libre', desc:'Bacardi oro, coca-cola e limão.', price:'R$25,00', img:Z+'b340810a24b38f6421c57f387df51efcd6bafd073e0bc33c27a79bf99ac1e3cd.jpg' },
+    { name:'CONHAQUE COM CACAU', desc:'O nome já diz.', price:'R$18,00', img:Z+'f9bab97dbee330a72a559e743a275172cb92cf683848e1ef0bd036e3368bcec2.jpg' },
+    { name:'Dry Martini', desc:'Gin e Vermouth Branco.', price:'R$35,00', img:Z+'82b5c010c7c1e29930a8442b587e466d824926ba11e61cd62f7cb39fbc1d5799.jpg' },
+    { name:'Espresso Martini', desc:'Vodka, café expresso, xarope de açúcar e grãos de café.', price:'R$35,00', img:Z+'1d7ac9f91007603b973fabf41ad92fb3d46f488fe91070c67942611fdbff7914.jpg' },
+    { name:'Fitzgerald', desc:'Gin Tanqueray, limão siciliano, angostura e pele de limão.', price:'R$35,00', img:Z+'b9ab2282a7625e61cc8c85549e8c65bc4b30dad4f35d1fc03930edc607b5b230.jpg' },
+    { name:'Gengibrite', desc:'Cachaça de gengibre, suco de limão siciliano e água com gás.', price:'R$25,00', img:Z+'fb985fb24386b177bb01c6d900936e69e5ff43c99175a5b5e5d55cd57256f06a.jpg' },
+    { name:'Gin Tônica', desc:'Gin Bombay, tônica e limão.', price:'R$35,00', img:Z+'e3f964e00e9b9b294c4731b0b02f44fa4bc733c1f010241c66bfa0d37b759bfd.jpg' },
+    { name:'Golden Shower', desc:'Cachaça de gengibre, cachaça salinas, limão e espuma de gengibre.', price:'R$35,00', img:Z+'9b4a6414adfd2c7284cd5f85b7690098fab3a72848957bd0f382fc697b461b6a.jpg' },
+    { name:'Irish Mule', desc:'Jameson, limão, xarope de açúcar, angostura e espuma de gengibre.', price:'R$35,00', img:Z+'43b66c678bda3c20847c5ca21153eb24ba34a649502c61a33a72ff5fc2bd642a.jpg' },
+    { name:"Jack & Coke", desc:"Jack Daniel's e Coca-Cola.", price:'R$35,00', img:Z+'b340810a24b38f6421c57f387df51efcd6bafd073e0bc33c27a79bf99ac1e3cd.jpg' },
+    { name:'Jagerbomb', desc:'Jägermeister com Red Bull.', price:'R$35,00', img:Z+'3663f96c732cebb1ee4f89ccb30a7ca315279af6abf4abab3c3ae9a16a2ee8cf.jpg' }
+  ]},
+  { id:'rango', icon:'🍔', name:'Rango', wide:true, items:[
+    { name:'LANCHE DE PERNIL', desc:'Pernil desfiado moiadinho e queijo prato no pão francês. (Contém glúten e leite)', price:'R$28,00', prefix:'A partir de',
+      img:Z+'f4aff81d63dc878d2beb5004701a4b47d1b1a9f8085b3e9fb4ca6f72bb46706a.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[{name:'BATATA SIDE',price:'+R$10,00'}]}] },
+    { name:'QUEIJO CRENTE (camembert)', desc:'Fogazza recheada com 150g de queijo camembert, compota de tomate e folhas verdes.', price:'R$64,90',
+      img:Z+'99416da8ecdd0641a0b1b4a4e335688ef7b16801985b5bcfb0b8803e7f0a7f00.jpg' },
+    { name:'X BURGER', desc:'Pão, hambúrguer bovino 150g, queijo prato e maionese da casa. (Contém glúten, ovo e leite)', price:'R$37,90', prefix:'A partir de',
+      img:ZF+'ea532951e7e19ae145e8f3c9897058da1254a8e8e66ace17b5354daa3e6b66f9.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[
+        {name:'BACON',price:'+R$7,00'},
+        {name:'BATATA CRINKLE (SIDE 100G)',price:'+R$10,00'},
+        {name:'HAMBURGUER EXTRA',price:'+R$10,00'},
+        {name:'QUEIJO EXTRA',price:'+R$7,00'},
+        {name:'SALADA',price:'+R$7,00'},
+        {name:'PICLES',price:'+R$3,00'}
+      ]}] },
+    { name:'BOLOVO DE CARNE', desc:'Carne envolvendo ovo com gema mole.', price:'R$28,00', prefix:'A partir de',
+      img:Z+'e2acec3f49bfbeaa52924abc90364da22a6e0d101f2bcac874da9ed2f3b3cbbf.jpg',
+      extras:[{title:'ADICIONAL',type:'add',opts:[{name:'MAIONESE EXTRA',price:'+R$5,00'}]}] },
+    { name:'BOLOVO À PARMEGIANA', desc:'Bolovo com compota de tomate, queijo gratinado, focaccia na manteiga de alho.', price:'R$47,00',
+      img:Z+'5f07e785a054b638180b8c7f0c132f028dd95c980a582491a01ba563d8dac59a.jpg' },
+    { name:'CHORIPAN', desc:'Pão francês, hambúrguer de linguiça toscana 150g e molho chimichurri. (Contém glúten)', price:'R$28,00', prefix:'A partir de',
+      img:Z+'724f1a0bb6da98ef065a975b527e3798db0653e4ce1ce07c0bcc743499e8d992.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[{name:'QUEIJO',price:'+R$7,00'},{name:'BATATA SIDE',price:'+R$10,00'}]}] },
+    { name:'FALAFEL', desc:'Pão australiano, hambúrguer de falafel 150g, queijo prato, tomate, pepino, rúcula e homus. (Contém glúten e leite)', price:'R$35,00', prefix:'A partir de',
+      img:Z+'73045f4d918191f1bd133ed0ea5f5371f2e3a34151363bfea9245d541a8d63fe.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[
+        {name:'BACON',price:'+R$7,00'},
+        {name:'BATATA SIDE',price:'+R$10,00'},
+        {name:'QUEIJO EXTRA',price:'+R$7,00'},
+        {name:'HAMBURGUER EXTRA',price:'Grátis'}
+      ]}] },
+    { name:'GALINHO XIKILIRO', desc:'Sobrecoxa de frango empanada, com molho barbecue artesanal. Valor com desconto.', price:'R$33,60', prefix:'A partir de',
+      img:Z+'0ebd79b215b3e7185ec6652d54297646e61e28665a7150eeb949291a7eab21c8.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[{name:'BACON',price:'+R$7,00'},{name:'QUEIJO EXTRA',price:'+R$7,00'},{name:'BATATA SIDE',price:'+R$10,00'}]}] }
+  ]},
+  { id:'vegano', icon:'🌿', name:'Vegano', items:[
+    { name:'(VEGANO) Falafel', desc:'Pão frances, hambúrguer de falafel 150g, tomate, pepino, cebola roxa, rúcula e homus.', price:'R$35,00', tag:'vegano',
+      img:Z+'1ee18a16c214892ad8c6234e7285a24a5aad2ed31d5419217e7576eef4cf4778.jpg',
+      extras:[{title:'ADICIONAL',type:'add',opts:[{name:'BATATA SIDE',price:'+R$10,00'}]}] }
+  ]},
+  { id:'porcoes', icon:'🍟', name:'Porções', items:[
+    { name:'BATATA FRITA', desc:'Batata frita, temperada com páprica defumada e lemon pepper (aprox. 350g). Pode conter traços de glúten.', price:'R$30,00', prefix:'A partir de',
+      img:Z+'819ba1fdef9e524ea0ff022443a52a491b6dc6e30f7c5015e4f7d6540f46f459.jpg',
+      extras:[{title:'ADICIONAIS',type:'add',opts:[{name:'AMERICAN CHEESE',price:'+R$12,00'},{name:'BARBECUE',price:'+R$5,00'},{name:'MAIONESE EXTRA',price:'+R$5,00'}]}] },
+    { name:'CHILI FRIES', desc:'Batata crinkle crocante coberta com molho chili picante e creme cheddar. (Contém glúten e leite)', price:'R$53,90', prefix:'A partir de',
+      img:Z+'305cfc8779329cfbccf605a1aeae397fd72948c819f473ece6c62ab35e2c6da9.jpg',
+      extras:[{title:'OPÇÕES',type:'add',opts:[{name:'CHILI À PARTE',price:'Grátis'},{name:'SOUR CREAM',price:'+R$5,00'}]}] },
+    { name:'GUIOZA SUINO', desc:'Guioza de carne de porco frito, acompanha molho shoyo. (10 unidades) Contém glúten.', price:'R$39,90',
+      img:Z+'6bd562213208b84eee354ec54d1e95f152678c010413c44dda5a715c771ed17d.jpg' },
+    { name:'ARANCINI DE CALABRESA', desc:'Arancini de calabresa com parmesão. [4 unidades]', price:'R$44,90',
+      img:ZF+'6041d7af90ba6e0de6a99a9c08dd0f101a6c71d7ead94b193c605dcdc3a20620.jpg' }
+  ]},
+  { id:'sobremesa', icon:'🍮', name:'Sobremesa', items:[
+    { name:'TEQUENO DE DOCE DE LEITE', desc:'Barrinha de doce leite envolta de massa de pão frito, com açúcar e canela.', price:'R$30,00',
+      img:ZF+'770c68def44d54044ccf155c1c99a0aee05c22c4d93b5d149a9914b488950540.jpg' }
+  ]},
+  { id:'sem-alcool', icon:'🥤', name:'Sem Álcool', items:[
+    { name:'Soda Italiana', desc:'Xarope de frutas e água com gás. Escolha o sabor.', price:'R$15,00', prefix:'A partir de',
+      img:Z+'8129521eb3269a30cc5aeb185dd9dc825e84ac2fcf477fa7c77a07ed58f00a71.jpg',
+      extras:[{title:'SABORES',type:'select',opts:[
+        {name:'GENGIBRE'},{name:'MORANGO'},{name:'GROSELHA'},{name:'MELANCIA'},
+        {name:'ROMÃ'},{name:'MAÇÃ VERDE'},{name:'FRAMBOESA'},{name:'TANGERINA'}
+      ]}] },
+    { name:'Chá Puro Verde', desc:'Mate orgânico, gaseificado, adoçado com suco de maçã.', price:'R$15,00',
+      img:Z+'10fe4a5a441f52f62bfd6f1da4880737af32a0d8d61a943bb60c0ccda5fdafee.jpg' },
+    { name:'Café / Espresso', desc:'De máquina.', price:'R$8,00',
+      img:Z+'7981c30d9dc66f62dd4ad5db0f63a67915219ae2b048ba7dfd4a4dfd4dff3d4e.jpg' },
+    { name:'Café Pint (sem álcool)', desc:'Café expresso, tônica, limão e xarope de gengibre.', price:'R$25,00',
+      img:Z+'58cbaf96f44325f3b0b67586d1ad05b7e024f3e8c4640cf3f4a4618f60499fd1.jpg' },
+    { name:'Tônica Antártica Lata', desc:'—', price:'R$8,00',
+      img:Z+'d79fc820f83f11ba8fe5dd2e21de3518bd4b5aa590bc41b860ac9df1314f4e91.jpg' },
+    { name:'RedBull 250ml', desc:'—', price:'R$20,00',
+      img:Z+'59eba4616f7e8eff7690f36235555b836f50a565473c6a355cb9cacd7e87f6e1.jpg' },
+    { name:'Água com Gás 500ml', desc:'—', price:'R$7,00',
+      img:Z+'552d0439013bf86db290459ef5dac66a9ba6f688a07cdaaf0811f376b812440f.jpg' },
+    { name:'Água sem Gás 500ml', desc:'—', price:'R$6,00',
+      img:Z+'793e644bf821b3a020cda88714c666de8c59d72134d119dd85c921033760a01a.jpg' },
+    { name:'Coca Cola', desc:'—', price:'R$8,00',
+      img:Z+'c0d14bc206e3153898c75e6e3d10f48b977029bf70064292cf6f13a65c952ffb.jpg' },
+    { name:'Coca Zero', desc:'—', price:'R$8,00',
+      img:Z+'8bcd1b1310092ed614189d444cc5cd5e3db1dc88a9f58dbe235b269aeb20157d.jpg' },
+    { name:'CORONA ZERO LATA (350ml)', desc:'—', price:'R$15,00',
+      img:Z+'8d0231af087d0d07ce3a53c60499bff4259d924902363551aac5a1b15d3981c0.jpg' }
+  ]},
+  { id:'destilados', icon:'🥃', name:'Destilados', items:[
+    { name:'Jack Daniels', desc:'Classic bourbon whiskey.', price:'R$35,00', img:Z+'8b57c02c3c1c824e43d9dd5eedc144b2db6981fc7500704640d5d7970960b212.jpg' },
+    { name:'Jameson', desc:'Irish classic whiskey.', price:'R$28,00', img:Z+'0034038f2a56cab272c4cd153272676cfeb3a438f50a2d195d55b5ac7b8637a7.jpg' },
+    { name:'Jim Beam', desc:'Classic bourbon whiskey.', price:'R$32,00', img:Z+'a0c85ac24c5b0bcf5ef92e86fb89ef07eeeb9274953fa114ac88ed3d2697d4e5.jpg' },
+    { name:'Woodford Reserve', desc:'Bourbon premium whiskey.', price:'R$49,90', img:Z+'49818293a7d082e11a3dea923f175358719aa0ed61cc2448a9bb92c448c98041.jpg' },
+    { name:'Fireball', desc:'Whisky com canela.', price:'R$25,00', img:Z+'c59d7096377291a9dc07913502a85ba260cd73a530981f1ec98846bae3666afb.jpg' },
+    { name:'Jagermeister', desc:'—', price:'R$28,00', img:Z+'b03a9c661ff8c09adf9a8a61eda3526894ade509bd44fb5e5599ca586ca0669e.jpg' },
+    { name:'Conhaque Domecq', desc:'—', price:'R$15,00', img:Z+'f9bab97dbee330a72a559e743a275172cb92cf683848e1ef0bd036e3368bcec2.jpg' },
+    { name:'Tequila', desc:'—', price:'R$25,00', img:Z+'52da624f85e8d77e5635f30a05f98b836eb1e1277fad3124ef0eeb073caf024d.jpg' },
+    { name:'Campari', desc:'—', price:'R$20,00', img:Z+'2d6233b70e5f1a260c0c6fd293cb218e8168862dd06a3f8871b1cd94df5aab64.jpg' },
+    { name:'Rum Bacardi', desc:'Ouro ou prata.', price:'R$20,00', img:Z+'48e2b2d4a8a83eaf3b763a6c24c87911d77fd9d5d06811447d5f18bf7a597c02.jpg' },
+    { name:'Vodka Smirnoff', desc:'—', price:'R$18,00', img:Z+'810e11f0fde1428f19d88131bba4c76f34e6588ed03ce9be669fe0d1ea4d0b07.jpg' },
+    { name:'CACHAÇAS ARTESANAIS', desc:'Diversas opções artesanais. Escolha a marca.', price:'R$15,00', prefix:'A partir de',
+      img:ZF+'8295d3cfe3d8d0161244f271ef15f373a38ed501db42a6bf235a3823b436bdec.jpg',
+      extras:[{title:'MARCAS',type:'select',opts:[
+        {name:'GENGIBRE'},{name:'TRÊS CORONÉIS'},{name:'SALINAS UMBURANA (MG)'},
+        {name:'GABRIELA (SP)'},{name:'SAGATIBA'},{name:'CARIBÉ (MG)'},{name:'JOÃO MENDES'}
+      ]}] }
+  ]},
+  { id:'vinhos', icon:'🍷', name:'Vinhos', items:[
+    { name:'Rolha (taxa)', desc:'—', price:'R$50,00', img:Z+'2811649ff7fc8feb2deffbf4075c4eef5ce07d84ac1b8fd0a64a6fc898bfb2a5.jpg' },
+    { name:'Vinho Tinto Taça (150ml)', desc:'Vinícola Miolo, blend Cabernet Sauvignon com Merlot.', price:'R$20,00',
+      img:Z+'76e4fc4b05c7f540aaf3b4b5d16ba871dcda3ad9483f0b8619522de5992f76fc.jpg' },
+    { name:'RESERVADO CONCHA Y TORO 750ml', desc:'Cabernet-Sauvignon, Malbec, Carménère e Merlot. Consulte disponibilidade.', price:'R$66,00', prefix:'A partir de',
+      img:ZF+'f69359ea0ab7761f257c7209c9ca8317c8514a3c14a4d556748712e37bd7e20a.png',
+      extras:[{title:'VARIEDADE',type:'select',opts:[{name:'CARMÉNÈRE'},{name:'TAÇA'}]}] },
+    { name:'PORTA 6 (português)', desc:'—', price:'R$110,00',
+      img:ZF+'307936bc07f4e5368bf7d784f3720b3c85bc3aca5de14a184fe0454433d4f5dd.jpg' },
+    { name:'A FLORISTA (português)', desc:'—', price:'R$100,00', prefix:'A partir de',
+      img:ZF+'e478fcba72ed501c16f7177e0e25766d4a90e6118797dc1c4271d7b36dc86cd5.jpg',
+      extras:[{title:'ADICIONAL',type:'add',opts:[{name:'TAÇA',price:'Consulte'}]}] },
+    { name:'CASILLERO DEL DIABLO (chileno)', desc:'—', price:'R$100,00', prefix:'A partir de',
+      img:ZF+'3e3b0979e9a1090bc6d5590642dc44e24edcf20a58e8227ec7557c805edf3587.jpg',
+      extras:[{title:'VARIEDADE',type:'select',opts:[{name:'CABERNET SAUVIGNON'},{name:'CARMÉNÈRE'}]}] },
+    { name:'SUSPEITO ROSÉ (750ml)', desc:'100% Merlot do RS. Perfil aromático frutal com notas florais.', price:'R$99,90',
+      img:ZF+'149cdd1ee6038f6b24ae87c6a37fcdbfaa83690bc5e12c6ca53c47f26a909d36.jpg' },
+    { name:'SUSPEITO TINTO (750ml)', desc:'Cabernet Sauvignon, Tannat e Moscato.', price:'R$99,90',
+      img:ZF+'582356014247f44b3a52bb2c09c7345b99cc1a0b545c976baf9bc01888a3fea0.jpg' },
+    { name:'SUSPEITO BRANCO (750ml)', desc:'100% Chardonnay do RS.', price:'R$99,90',
+      img:ZF+'eec9497cab38c4285c40ec98c42646eefd64d46b403e2b3101a27c722cde5949.jpg' },
+    { name:'TAÇA DE VINHO SUSPEITO', desc:'Escolha o tipo: Tinto, Rosé ou Branco.', price:'R$25,00', prefix:'A partir de',
+      img:ZF+'bc86c636ad69b6df60689c2c7b8f10d9a91e7dcd67d4355414ad9693e5084efb.jpg',
+      extras:[{title:'TIPO',type:'select',opts:[{name:'VINHO TINTO'},{name:'VINHO ROSÉ'},{name:'VINHO BRANCO'}]}] }
+  ]}
+];
+
+// ══ CANVAS BATS (background horizontal drift) ══
+(function(){
+  const canvas = document.getElementById('batCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  let W, H, bats=[], rafId;
+
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function makeBat(i){
+    return {
+      x: Math.random()*W, baseY: Math.random()*H,
+      y: 0, vx: (Math.random()>.5?1:-1)*(0.3+Math.random()*.5),
+      phase: Math.random()*Math.PI*2,
+      wPhase: Math.random()*Math.PI*2,
+      wSpeed: 0.06+Math.random()*.04,
+      size: (W<600?10:14)+Math.random()*10,
+      alpha: 0.13+Math.random()*.15,
+      amp: 20+Math.random()*35,
+      freq: 0.008+Math.random()*.006,
+      t: Math.random()*500
+    };
+  }
+
+  function drawBat(bat){
+    const {x,y,size,wPhase,alpha,vx} = bat;
+    const w=size, h=size*.45;
+    const wf = Math.sin(wPhase)*h*.65;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#c9a227';
+    ctx.translate(x,y);
+    if(vx<0) ctx.scale(-1,1);
+    ctx.beginPath();
+    ctx.moveTo(-w*.1,-h*.2);
+    ctx.bezierCurveTo(-w*.35,wf-h*.35,-w*.72,wf*.8,-w,wf*.4);
+    ctx.bezierCurveTo(-w*.68,h*.45,-w*.32,h*.28,-w*.1,h*.18);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(w*.1,-h*.2);
+    ctx.bezierCurveTo(w*.35,wf-h*.35,w*.72,wf*.8,w,wf*.4);
+    ctx.bezierCurveTo(w*.68,h*.45,w*.32,h*.28,w*.1,h*.18);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0,0,w*.1,h*.5,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function tick(){
+    ctx.clearRect(0,0,W,H);
+    bats.forEach(b=>{
+      b.t++; b.wPhase+=b.wSpeed;
+      b.x+=b.vx;
+      b.y = b.baseY + Math.sin(b.t*b.freq)*b.amp;
+      if(b.x<-b.size*3) b.x=W+b.size;
+      else if(b.x>W+b.size*3) b.x=-b.size;
+      drawBat(b);
+    });
+    rafId=requestAnimationFrame(tick);
+  }
+
+  function init(){
+    resize();
+    const n = W<600?3:6;
+    bats = Array.from({length:n},(_,i)=>makeBat(i));
+    if(rafId) cancelAnimationFrame(rafId);
+    tick();
+  }
+
+  window.addEventListener('resize',()=>{resize(); bats.forEach(b=>{if(b.x>W)b.x=W*.9; if(b.baseY>H)b.baseY=H*.9;})});
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden){cancelAnimationFrame(rafId);}else{tick();}});
+  init();
+})();
+
+// ══ FLOATING PARTICLES (anti-gravity — drift upward) ══
+(function(){
+  const SYMBOLS = ['🦇','🍹','🥂','🍸','🍺','🦇','🦇'];
+  const container = document.getElementById('floatParticles');
+  let active = 0;
+  const MAX = window.innerWidth < 600 ? 6 : 10;
+
+  function spawn(){
+    if(active >= MAX || document.hidden) return;
+    active++;
+    const el = document.createElement('span');
+    el.className = 'fp';
+    const x = 5 + Math.random() * 90;
+    const dur = 9 + Math.random() * 10;
+    const fx = (Math.random() - .5) * 80;
+    const fr = (Math.random() - .5) * 360;
+    const sz = 10 + Math.random() * 14;
+    el.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+    el.style.cssText = `left:${x}%;font-size:${sz}px;animation-duration:${dur}s;--fx:${fx}px;--fr:${fr}deg;`;
+    container.appendChild(el);
+    setTimeout(()=>{ el.remove(); active--; }, (dur + .5) * 1000);
+  }
+
+  setInterval(spawn, 1400);
+  // Initial burst
+  for(let i=0; i<3; i++) setTimeout(spawn, i*400);
+})();
+
+// ══ HERO ══
+const hero = document.getElementById('hero');
+function dismissHero(){
+  hero.classList.add('out');
+  setTimeout(()=>{ hero.style.display='none'; },650);
+  sessionStorage.setItem('morcego_visited','1');
+}
+if(sessionStorage.getItem('morcego_visited')){
+  hero.style.display='none';
+} else {
+  document.getElementById('heroCta').addEventListener('click', e=>{ e.stopPropagation(); dismissHero(); });
+  hero.addEventListener('click', dismissHero);
+}
+
+// ══ SEARCH TOGGLE (mobile) ══
+const searchToggle = document.getElementById('searchToggle');
+const searchBar = document.getElementById('searchBar');
+const searchMobile = document.getElementById('searchMobile');
+searchToggle.addEventListener('click',()=>{
+  searchBar.classList.toggle('open');
+  if(searchBar.classList.contains('open')) searchMobile.focus();
+});
+
+function doSearch(q){
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('.section').forEach(sec=>{
+    let vis=0;
+    sec.querySelectorAll('.card').forEach(c=>{
+      const m = !q||c.textContent.toLowerCase().includes(q);
+      c.style.display=m?'':'none';
+      if(m)vis++;
+    });
+    sec.style.display=vis===0&&q?'none':'';
+  });
+  document.querySelectorAll('.nav-item,.bnav-item').forEach(n=>{
+    const s=document.getElementById(n.dataset.cat);
+    n.style.opacity=s&&s.style.display==='none'?'.3':'';
+  });
+}
+searchMobile.addEventListener('input',e=>doSearch(e.target.value));
+document.getElementById('searchDesktop').addEventListener('input',e=>doSearch(e.target.value));
+
+// ══ BUILD NAV ══
+function buildNav(){
+  const sidebar=document.getElementById('sidebarNav');
+  const bottomNav=document.getElementById('bottomNav');
+  categories.forEach((cat,i)=>{
+    const a=document.createElement('a');
+    a.href='#'+cat.id; a.className='nav-item'+(i===0?' active':'');
+    a.dataset.cat=cat.id;
+    a.innerHTML=`<span class="ni">${cat.icon}</span>${cat.name}`;
+    sidebar.appendChild(a);
+    const b=document.createElement('a');
+    b.href='#'+cat.id; b.className='bnav-item'+(i===0?' active':'');
+    b.dataset.cat=cat.id;
+    b.innerHTML=`<span class="bnav-icon">${cat.icon}</span>${cat.name}`;
+    bottomNav.appendChild(b);
+  });
+}
+
+// ══ BUILD CONTENT ══
+function buildContent(){
+  const main=document.getElementById('mainContent');
+  categories.forEach(cat=>{
+    const sec=document.createElement('section');
+    sec.className='section'; sec.id=cat.id;
+    sec.innerHTML=`<div class="section-header"><span class="section-emoji">${cat.icon}</span><h2 class="section-title">${cat.name}</h2><span class="section-count">${cat.items.length} ${cat.items.length===1?'item':'itens'}</span></div>`;
+    const grid=document.createElement('div');
+    grid.className='grid'+(cat.wide?' grid-wide':'');
+    cat.items.forEach(item=>{
+      const card=document.createElement('div');
+      card.className='card';
+      card.addEventListener('click',()=>{ openModal(item,cat); if(navigator.vibrate) navigator.vibrate(18); });
+      const prefix=item.prefix?`<span class="card-price-prefix">${item.prefix}</span>`:'';
+      const tag=item.tag?`<span class="card-tag ${item.tag}">${item.tag==='vegano'?'🌱 VEGANO':item.tag}</span>`:'';
+      const extrasTag=item.extras?`<span class="card-tag" style="right:6px;left:auto;top:6px;background:rgba(201,162,39,.18);color:var(--gold);border-color:var(--bord2)">+ opções</span>`:'';
+      card.innerHTML=`
+        <div class="card-img"><img src="${item.img}" alt="${item.name}" loading="lazy">${tag}${extrasTag}</div>
+        <div class="card-body">
+          <div class="card-name">${item.name}</div>
+          <div class="card-desc">${item.desc}</div>
+          <div class="card-footer"><div>${prefix}<span class="card-price">${item.price}</span></div><button class="card-btn" aria-label="Ver produto">+</button></div>
+        </div>`;
+      grid.appendChild(card);
+    });
+    sec.appendChild(grid);
+    main.appendChild(sec);
+  });
+}
+
+// ══ MODAL ══
+let modalStartY=0;
+let currentItem=null;
+
+function buildExtras(extras){
+  if(!extras||!extras.length) return '';
+  return extras.map(section=>{
+    const isSelect = section.type === 'select';
+    const chips = section.opts.map((opt,i)=>{
+      const priceHtml = opt.price
+        ? `<span class="extra-price">${opt.price}</span>`
+        : '';
+      const freeClass = opt.price && opt.price.toLowerCase().includes('grát') ? ' free' : '';
+      const selectClass = isSelect ? ' select-chip' : '';
+      const selectedClass = isSelect && i===0 ? ' selected' : '';
+      return `<button class="extra-chip${freeClass}${selectClass}${selectedClass}" data-section="${section.title}">${opt.name}${priceHtml}</button>`;
+    }).join('');
+    const typeHint = isSelect ? '<span style="font-size:.5rem;color:var(--dim);margin-left:.4rem;text-transform:none;letter-spacing:0">escolha</span>' : '';
+    return `<div class="extras-section">
+      <div class="extras-section-title">${section.title}${typeHint}</div>
+      <div class="extras-chips">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
+function openModal(item,cat){
+  currentItem=item;
+  const overlay=document.getElementById('modalOverlay');
+  const imgWrap=document.getElementById('modalImg');
+  document.getElementById('modalCat').textContent=cat.icon+' '+cat.name;
+  document.getElementById('modalName').textContent=item.name;
+  document.getElementById('modalDesc').textContent=item.desc;
+  document.getElementById('modalPrice').textContent=item.price;
+  document.getElementById('modalPriceLabel').textContent=item.prefix||'Valor';
+  document.getElementById('modalExtras').innerHTML=buildExtras(item.extras);
+  imgWrap.innerHTML='';
+  const img=document.createElement('img');
+  img.src=item.img; img.alt=item.name;
+  imgWrap.appendChild(img);
+  // WhatsApp link
+  const wppMsg = encodeURIComponent(`Olá! Quero pedir:\n*${item.name}* — ${item.price}\n\nCardápio: MORCEGO Lanchonete, Santo André`);
+  document.getElementById('modalWpp').href=`https://wa.me/${WPP_NUMBER}?text=${wppMsg}`;
+  overlay.classList.add('open');
+  document.body.style.overflow='hidden';
+  // select chip interaction
+  document.getElementById('modalExtras').querySelectorAll('.select-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const sec=chip.dataset.section;
+      document.getElementById('modalExtras').querySelectorAll(`.select-chip[data-section="${sec}"]`).forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+    });
+  });
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+  currentItem=null;
+}
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+document.getElementById('modalOrderBtn').addEventListener('click',()=>{
+  if(navigator.vibrate) navigator.vibrate([15,10,15]);
+  const wppLink = document.getElementById('modalWpp').href;
+  if(wppLink && wppLink !== '#') window.open(wppLink, '_blank');
+});
+const modal=document.getElementById('modal');
+modal.addEventListener('touchstart',e=>{ modalStartY=e.touches[0].clientY; },{passive:true});
+modal.addEventListener('touchend',e=>{
+  const dy=e.changedTouches[0].clientY-modalStartY;
+  if(dy>80&&modal.scrollTop===0) closeModal();
+},{passive:true});
+
+// ══ TAP BATS ══
+function spawnBat(x,y){
+  const container=document.getElementById('tapBats');
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','-32 -24 64 40');
+  const s=26+Math.random()*16;
+  svg.style.cssText=`position:absolute;left:${x-s/2}px;top:${y-s/2}px;width:${s}px;height:${s}px;pointer-events:none;opacity:.92;`;
+  svg.innerHTML=`
+    <path d="M-3,-3 C-11,-12 -24,-14 -30,-9 C-24,-2 -14,3 -5,5 C-3,6 -3,3 -3,0Z" fill="#c9a227"/>
+    <path d="M3,-3 C11,-12 24,-14 30,-9 C24,-2 14,3 5,5 C3,6 3,3 3,0Z" fill="#c9a227"/>
+    <ellipse cx="0" cy="-1" rx="4.5" ry="7" fill="#c9a227"/>
+    <path d="M-2,-8 L-5,-19 L1,-9Z" fill="#c9a227"/>
+    <path d="M2,-8 L5,-19 L-1,-9Z" fill="#c9a227"/>
+    <circle cx="-1.8" cy="-4" r="1.4" fill="#cc2211"/>
+    <circle cx="1.8" cy="-4" r="1.4" fill="#cc2211"/>
+    <line x1="-1" y1="2" x2="-1.5" y2="5" stroke="#c9a227" stroke-width="1.2" stroke-linecap="round" opacity=".8"/>
+    <line x1="1" y1="2" x2="1.5" y2="5" stroke="#c9a227" stroke-width="1.2" stroke-linecap="round" opacity=".8"/>
+  `;
+  container.appendChild(svg);
+  const angle=Math.random()*Math.PI*2;
+  const dist=60+Math.random()*80;
+  const dx=Math.cos(angle)*dist, dy=Math.sin(angle)*dist;
+  requestAnimationFrame(()=>{
+    svg.style.transition='transform .7s ease-out,opacity .7s ease-out';
+    svg.style.transform=`translate(${dx}px,${dy}px) scale(.2) rotate(${Math.random()*360}deg)`;
+    svg.style.opacity='0';
+  });
+  setTimeout(()=>svg.remove(),750);
+}
+document.addEventListener('touchend',e=>{
+  if(e.target.closest('#hero')||e.target.closest('.modal-overlay')||e.target.closest('.header')||e.target.closest('.bottom-nav')) return;
+  const t=e.changedTouches[0];
+  spawnBat(t.clientX,t.clientY);
+  if(Math.random()>.4) setTimeout(()=>spawnBat(t.clientX+(Math.random()-.5)*30,t.clientY+(Math.random()-.5)*30),120);
+},{passive:true});
+document.addEventListener('click',e=>{
+  if(e.target.closest('#hero')||e.target.closest('.modal-overlay')||e.target.closest('.header')||e.target.closest('.search-input')||e.target.closest('.card-btn')) return;
+  spawnBat(e.clientX,e.clientY);
+},{passive:true});
+
+// ══ ACTIVE NAV ON SCROLL ══
+function updateNav(){
+  const secs=document.querySelectorAll('.section');
+  const sy=window.scrollY+140;
+  let cur=secs[0]?.id;
+  secs.forEach(s=>{ if(s.offsetTop<=sy) cur=s.id; });
+  document.querySelectorAll('.nav-item,.bnav-item').forEach(n=>{
+    n.classList.toggle('active',n.dataset.cat===cur);
+  });
+  const active=document.querySelector('.bnav-item.active');
+  if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+window.addEventListener('scroll',updateNav,{passive:true});
+
+// ══ STATUS ABERTO/FECHADO (18h–23:59) ══
+function updateStatus(){
+  const h = new Date().getHours();
+  const isOpen = h >= 18; // aberto das 18:00 até 23:59
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusTxt');
+  dot.classList.toggle('closed', !isOpen);
+  txt.classList.toggle('closed', !isOpen);
+  txt.textContent = isOpen ? 'Aberto' : 'Fechado';
+}
+updateStatus();
+setInterval(updateStatus, 60000);
+
+// ══ INIT ══
+buildNav();
+buildContent();
+updateNav();
+</script>
+</body>
+</html>
