@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morcego — Painel do Dono</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09080c;--bg2:#110f18;--bg3:#18151f;--card:#1d1a26;--card-h:#252232;
+  --gold:#c9a227;--gold2:#8a6d18;--bord:rgba(201,162,39,.13);--bord2:rgba(201,162,39,.35);
+  --glow:rgba(201,162,39,.12);--cream:#ede5d0;--dim:#7a6a5a;
+  --green:#3ecf6e;--red:#e53e3e;--blue:#6c8ef7;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold2);border-radius:2px}
+button{cursor:pointer;font-family:inherit}
+input,textarea,select{font-family:inherit;color:var(--cream);background:var(--bg3);border:1px solid var(--bord);border-radius:6px;padding:.5rem .75rem;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--gold2)}
+select option{background:var(--bg3)}
+textarea{resize:vertical;min-height:60px}
+
+/* ══ LOGIN ══ */
+#loginWrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:9999;gap:1.5rem;padding:2rem}
+.login-logo{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;color:var(--gold);letter-spacing:.2em;text-shadow:0 0 30px rgba(201,162,39,.4)}
+.login-sub{font-size:.7rem;letter-spacing:.35em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace}
+.login-box{width:100%;max-width:340px;display:flex;flex-direction:column;gap:.75rem}
+.login-box input{font-size:.95rem;padding:.75rem 1rem;text-align:center;letter-spacing:.15em}
+.login-box input::placeholder{letter-spacing:.05em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.65rem 1.2rem;border-radius:8px;border:none;font-size:.82rem;font-weight:600;letter-spacing:.06em;transition:all .18s}
+.btn-gold{background:var(--gold);color:var(--bg)}
+.btn-gold:hover{background:#e0b52e}
+.btn-outline{background:transparent;border:1px solid var(--bord2);color:var(--cream)}
+.btn-outline:hover{background:var(--glow)}
+.btn-danger{background:rgba(229,62,62,.15);border:1px solid rgba(229,62,62,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(229,62,62,.25)}
+.btn-sm{padding:.4rem .8rem;font-size:.75rem}
+.btn-icon{width:32px;height:32px;padding:0;border-radius:6px;background:var(--glow);border:1px solid var(--bord);color:var(--cream)}
+.btn-icon:hover{border-color:var(--bord2)}
+.login-err{font-size:.75rem;color:var(--red);text-align:center;min-height:1rem}
+
+/* ══ APP SHELL ══ */
+#app{display:none;height:100%;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.6rem 1.2rem;
+  background:var(--bg2);border-bottom:1px solid var(--bord);
+  flex-shrink:0;position:sticky;top:0;z-index:100;
+}
+.topbar-logo{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:900;color:var(--gold);letter-spacing:.15em}
+.topbar-title{font-size:.72rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;font-family:'DM Mono',monospace}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:.5rem}
+.badge{display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-weight:700;line-height:1}
+
+/* ══ NAV TABS ══ */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;background:var(--bg2);border-bottom:1px solid var(--bord);flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  display:flex;align-items:center;gap:.35rem;white-space:nowrap;
+  padding:.6rem 1rem;font-size:.75rem;font-weight:600;letter-spacing:.06em;
+  color:var(--dim);background:none;border:none;border-bottom:2px solid transparent;
+  transition:all .18s;cursor:pointer;
+}
+.tab:hover{color:var(--cream)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-icon{font-size:.9rem}
+
+/* ══ CONTENT AREA ══ */
+.content{flex:1;overflow-y:auto;padding:1.2rem}
+.page{display:none}.page.active{display:block}
+
+/* ══ SECTION HEADER ══ */
+.sh{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
+.sh h2{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700}
+.sh-actions{margin-left:auto;display:flex;gap:.4rem}
+
+/* ══ CARDS ══ */
+.card{background:var(--card);border:1px solid var(--bord);border-radius:10px;padding:1rem}
+.card+.card{margin-top:.75rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+@media(max-width:480px){.grid2{grid-template-columns:1fr}}
+
+/* ══ FORM ROWS ══ */
+.form-row{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.75rem}
+.form-row label{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace}
+.form-inline{display:flex;gap:.5rem;align-items:center}
+.form-inline input{flex:1}
+
+/* ══ TOGGLE ══ */
+.toggle{position:relative;width:42px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:12px;background:var(--bg3);border:1px solid var(--bord);cursor:pointer;transition:.2s}
+.toggle input:checked+.toggle-track{background:var(--green);border-color:var(--green)}
+.toggle-track::after{content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle input:checked+.toggle-track::after{left:calc(100% - 19px)}
+
+/* ══ STATUS DOT ══ */
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sdot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.sdot.red{background:var(--red);box-shadow:0 0 6px var(--red)}
+.sdot.gold{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+
+/* ══ PRODUCT LIST ══ */
+.prod-list{display:flex;flex-direction:column;gap:.5rem}
+.prod-item{
+  display:flex;align-items:center;gap:.75rem;
+  background:var(--card);border:1px solid var(--bord);border-radius:8px;
+  padding:.6rem .8rem;
+}
+.prod-item.unavailable{opacity:.55}
+.prod-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--bg3);flex-shrink:0}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-meta{font-size:.65rem;color:var(--dim);margin-top:2px}
+.prod-badge{display:inline-block;font-size:.55rem;padding:1px 5px;border-radius:3px;margin-left:.3rem;letter-spacing:.05em;text-transform:uppercase}
+.prod-badge.vegano{background:rgba(62,207,110,.15);color:var(--green);border:1px solid rgba(62,207,110,.3)}
+.prod-badge.sem-gluten{background:rgba(108,142,247,.15);color:var(--blue);border:1px solid rgba(108,142,247,.3)}
+.prod-badge.mais-pedido{background:rgba(201,162,39,.15);color:var(--gold);border:1px solid var(--bord2)}
+.prod-actions{display:flex;gap:.3rem;flex-shrink:0}
+.esgotado-label{font-size:.6rem;color:var(--red);font-family:'DM Mono',monospace;letter-spacing:.06em}
+
+/* ══ ORDER CARDS ══ */
+.order-card{background:var(--card);border:1px solid var(--bord);border-radius:10px;overflow:hidden;margin-bottom:.75rem}
+.order-header{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:var(--bg3);border-bottom:1px solid var(--bord)}
+.order-table{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold)}
+.order-time{font-size:.65rem;color:var(--dim);font-family:'DM Mono',monospace;margin-left:auto}
+.order-status{font-size:.6rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px}
+.order-status.pending{background:rgba(246,166,35,.15);color:#f6a623;border:1px solid rgba(246,166,35,.3)}
+.order-status.confirmed{background:rgba(108,142,247,.15);color:var(--blue);border:1px solid rgba(108,142,247,.3)}
+.order-status.ready{background:rgba(62,207,110,.15);color:var(--green);border:1px solid rgba(62,207,110,.3)}
+.order-body{padding:.75rem 1rem}
+.order-item-row{display:flex;justify-content:space-between;font-size:.82rem;padding:.2rem 0;border-bottom:1px solid var(--bord)}
+.order-item-row:last-child{border-bottom:none}
+.order-total{display:flex;justify-content:space-between;padding:.5rem 1rem;background:var(--bg3);font-size:.85rem;font-weight:600;color:var(--gold)}
+.order-actions{display:flex;gap:.5rem;padding:.6rem 1rem;background:var(--bg3);border-top:1px solid var(--bord)}
+.order-actions .btn{flex:1}
+
+/* ══ REACTIONS TABLE ══ */
+.react-table{width:100%;border-collapse:collapse}
+.react-table th{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-align:left;padding:.4rem .6rem;font-family:'DM Mono',monospace;font-weight:400}
+.react-table td{padding:.5rem .6rem;font-size:.82rem;border-top:1px solid var(--bord)}
+.react-table tr:hover td{background:var(--bg3)}
+.react-bar{height:6px;border-radius:3px;background:var(--glow)}
+.react-bar-fill{height:100%;border-radius:3px}
+
+/* ══ HIGHLIGHT GRID ══ */
+.hl-grid{display:flex;flex-direction:column;gap:.5rem}
+.hl-row{display:grid;grid-template-columns:60px 1fr 100px 100px 32px;gap:.5rem;align-items:center}
+.hl-day{font-size:.7rem;font-family:'DM Mono',monospace;letter-spacing:.06em;color:var(--dim)}
+.hl-row input{font-size:.75rem;padding:.35rem .6rem}
+
+/* ══ NOTIFY TOAST ══ */
+#toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--card);border:1px solid var(--bord2);border-radius:8px;
+  padding:.65rem 1.2rem;font-size:.82rem;color:var(--cream);
+  transition:transform .3s;z-index:9999;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ══ MODAL ══ */
+#modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:flex-end;justify-content:center}
+#modalOverlay.open{display:flex}
+#modalBox{
+  background:var(--bg2);border:1px solid var(--bord2);
+  border-radius:16px 16px 0 0;width:100%;max-width:560px;
+  max-height:90vh;overflow-y:auto;padding:1.25rem;
+}
+@media(min-width:600px){
+  #modalOverlay{align-items:center;padding:1rem}
+  #modalBox{border-radius:14px;max-height:85vh}
+}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
+.chips-row{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .65rem;border-radius:20px;border:1px solid var(--bord);background:var(--bg3);font-size:.7rem;cursor:pointer;transition:all .15s}
+.chip.active{border-color:var(--bord2);background:var(--glow);color:var(--gold)}
+.divider{height:1px;background:var(--bord);margin:1rem 0}
+
+/* ══ STATS CARD ══ */
+.stat-card{background:var(--card);border:1px solid var(--bord);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.3rem}
+.stat-value{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--gold)}
+.stat-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace}
+.wait-input-row{display:flex;align-items:center;gap:.75rem}
+.wait-preview{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--green);min-width:80px}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div id="loginWrap">
+  <div class="login-logo">MORCEGO</div>
+  <div class="login-sub">Painel do Dono</div>
+  <div class="login-box">
+    <input type="password" id="pwInput" placeholder="Senha de acesso" autocomplete="current-password">
+    <button class="btn btn-gold" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+  <div style="font-size:.6rem;color:var(--dim);font-family:'DM Mono',monospace;margin-top:.5rem">senha padrão: morcego2024</div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-logo">MORCEGO</div>
+      <div class="topbar-title">Painel do Dono</div>
+    </div>
+    <div class="topbar-right">
+      <span id="orderBadge" class="badge" style="display:none">0</span>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-page="dashboard" onclick="navigate('dashboard')">
+      <span class="tab-icon">📊</span>Dashboard
+    </button>
+    <button class="tab" data-page="cardapio" onclick="navigate('cardapio')">
+      <span class="tab-icon">📋</span>Cardápio
+    </button>
+    <button class="tab" data-page="pedidos" onclick="navigate('pedidos')">
+      <span class="tab-icon">🛒</span>Pedidos
+    </button>
+    <button class="tab" data-page="avaliacoes" onclick="navigate('avaliacoes')">
+      <span class="tab-icon">⭐</span>Avaliações
+    </button>
+    <button class="tab" data-page="config" onclick="navigate('config')">
+      <span class="tab-icon">⚙️</span>Config
+    </button>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="grid2" style="margin-bottom:1rem">
+        <div class="stat-card">
+          <div class="stat-label">Pedidos Pendentes</div>
+          <div class="stat-value" id="statPending">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Status do Bar</div>
+          <div style="display:flex;align-items:center;gap:.5rem;margin-top:.25rem">
+            <span class="sdot" id="barStatusDot"></span>
+            <span id="barStatusTxt" style="font-size:.85rem;font-weight:600"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:.75rem">
+        <div class="sh"><h2>⏱ Tempo de Espera</h2></div>
+        <div class="wait-input-row">
+          <label class="toggle"><input type="checkbox" id="waitToggle" onchange="toggleWaitTime()"><span class="toggle-track"></span></label>
+          <input type="text" id="waitInput" placeholder="ex: ~20min" style="max-width:140px;display:none" oninput="saveWaitTime()">
+          <span class="wait-preview" id="waitPreview">Desativado</span>
+        </div>
+        <div style="font-size:.65rem;color:var(--dim);margin-top:.5rem">Aparece como banner no topo do cardápio para os clientes.</div>
+      </div>
+
+      <div class="card" style="margin-bottom:.75rem">
+        <div class="sh"><h2>🍽 Modo Mesa</h2>
+          <label class="toggle" style="margin-left:auto"><input type="checkbox" id="mesaToggle" onchange="saveMesaMode()"><span class="toggle-track"></span></label>
+        </div>
+        <div style="font-size:.65rem;color:var(--dim)">Clientes digitam o número da mesa antes de ver o cardápio e podem enviar pedidos direto para o caixa.</div>
+      </div>
+
+      <div class="card">
+        <div class="sh"><h2>🌙 Destaque da Noite</h2></div>
+        <div style="font-size:.65rem;color:var(--dim);margin-bottom:.75rem">Configure o item em destaque para cada dia da semana. Aparece no topo do cardápio.</div>
+        <div class="hl-grid" id="hlGrid"></div>
+        <button class="btn btn-gold btn-sm" style="margin-top:.75rem" onclick="saveHighlights()">Salvar Destaques</button>
+      </div>
+    </div>
+
+    <!-- ── CARDÁPIO ── -->
+    <div class="page" id="page-cardapio">
+      <div class="sh">
+        <h2>📋 Cardápio</h2>
+        <div class="sh-actions">
+          <button class="btn btn-gold btn-sm" onclick="openProductModal(null,null)">+ Produto</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+        <input type="text" id="prodSearch" placeholder="Buscar produto..." style="flex:1;min-width:180px" oninput="renderCardapio()">
+        <select id="catFilter" onchange="renderCardapio()" style="width:auto;min-width:140px">
+          <option value="">Todas as categorias</option>
+        </select>
+      </div>
+      <div id="prodList" class="prod-list"></div>
+    </div>
+
+    <!-- ── PEDIDOS ── -->
+    <div class="page" id="page-pedidos">
+      <div class="sh"><h2>🛒 Pedidos</h2>
+        <div class="sh-actions">
+          <button class="btn btn-outline btn-sm" onclick="renderPedidos()">↻ Atualizar</button>
+          <button class="btn btn-danger btn-sm" onclick="clearDoneOrders()">Limpar finalizados</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:.4rem;margin-bottom:1rem;overflow-x:auto">
+        <button class="btn btn-outline btn-sm" id="filterBtn-all" onclick="setOrderFilter('all')">Todos</button>
+        <button class="btn btn-gold btn-sm" id="filterBtn-pending" onclick="setOrderFilter('pending')">Pendentes</button>
+        <button class="btn btn-outline btn-sm" id="filterBtn-confirmed" onclick="setOrderFilter('confirmed')">Confirmados</button>
+        <button class="btn btn-outline btn-sm" id="filterBtn-ready" onclick="setOrderFilter('ready')">Prontos</button>
+      </div>
+      <div id="orderList"></div>
+    </div>
+
+    <!-- ── AVALIAÇÕES ── -->
+    <div class="page" id="page-avaliacoes">
+      <div class="sh"><h2>⭐ Avaliações</h2>
+        <div class="sh-actions">
+          <select id="reactSort" onchange="renderAvaliacoes()" style="width:auto;font-size:.75rem;padding:.35rem .6rem">
+            <option value="fire">🔥 Mais quentes</option>
+            <option value="heart">❤️ Mais amados</option>
+            <option value="total">Total de reações</option>
+          </select>
+          <button class="btn btn-danger btn-sm" onclick="clearReactions()">Zerar</button>
+        </div>
+      </div>
+      <table class="react-table" id="reactTable">
+        <thead><tr><th>Produto</th><th>🔥</th><th>❤️</th><th>😐</th><th>Total</th></tr></thead>
+        <tbody id="reactBody"></tbody>
+      </table>
+    </div>
+
+    <!-- ── CONFIG ── -->
+    <div class="page" id="page-config">
+      <div class="sh"><h2>⚙️ Configurações</h2></div>
+      <div class="card" style="margin-bottom:.75rem">
+        <div class="sh"><h2>🔑 Senha de Acesso</h2></div>
+        <div class="form-row">
+          <label>Nova Senha</label>
+          <input type="password" id="newPw" placeholder="Nova senha">
+        </div>
+        <div class="form-row">
+          <label>Confirmar</label>
+          <input type="password" id="newPwConfirm" placeholder="Repita a senha">
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="changePassword()">Alterar Senha</button>
+      </div>
+      <div class="card" style="margin-bottom:.75rem">
+        <div class="sh"><h2>🔗 Link do Cardápio</h2></div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="text" id="cardapioUrl" readonly style="font-size:.72rem;font-family:'DM Mono',monospace">
+          <button class="btn btn-outline btn-sm" onclick="copyUrl()">Copiar</button>
+        </div>
+        <div style="font-size:.65rem;color:var(--dim);margin-top:.5rem">Use esta URL para gerar o QR Code do cardápio.</div>
+      </div>
+      <div class="card">
+        <div class="sh"><h2>🗑 Dados</h2></div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+          <button class="btn btn-danger btn-sm" onclick="clearOrders()">Limpar todos os pedidos</button>
+          <button class="btn btn-danger btn-sm" onclick="clearReactions()">Zerar avaliações</button>
+          <button class="btn btn-outline btn-sm" onclick="exportData()">Exportar JSON</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ MODAL PRODUTO ════ -->
+<div id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div id="modalBox">
+    <div class="modal-title">
+      <span id="modalTitle">Produto</span>
+      <button class="btn-icon btn" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalForm"></div>
+  </div>
+</div>
+
+<!-- ════ TOAST ════ -->
+<div id="toast"></div>
+
+<script>
+// ══ BASE PRODUCT DATA (mirrors index.html categories[]) ══
+const Z  = 'https://zig-public.zig.fun/images/';
+const ZF = 'https://zig-public-files.zig.fun/images/';
+const BASE_CATEGORIES = [
+  { id:'lojinha', icon:'🛍️', name:'Lojinha', items:[
+    { name:'CAMISETA MOCERGO KISS' },{ name:'CAMISETA 7 ANOS MOCERGO' },{ name:'SERIGRAFIA MOCERGO' }
+  ]},
+  { id:'destaques', icon:'⭐', name:'Destaques', items:[
+    { name:'ARANCINI DE CALABRESA' },{ name:'GALINHO XIKILIRO' }
+  ]},
+  { id:'cervejas', icon:'🍺', name:'Cervejas', items:[
+    { name:'CHOPP PILSEN' },{ name:'Chopp Ratazana IPA' },{ name:'HEINEKEN (330ml)' },
+    { name:'CORONA (330ml)' },{ name:'PURE GOLD' }
+  ]},
+  { id:'drinks-autorais', icon:'🍹', name:'Drinks Autorais', items:[
+    { name:'Encuentro' },{ name:'Lixinho' },{ name:'Artemísia' },{ name:'CAMI SOUR' },
+    { name:'MATO SANTO' },{ name:'Pula Pirata' },{ name:'CABARÉ' },{ name:'MARACARU' },
+    { name:'CABAQUI' },{ name:'PARANGA' }
+  ]},
+  { id:'drinks', icon:'🥂', name:'Drinks', items:[
+    { name:'Amareto Sour' },{ name:'NEGRONI' },{ name:'BOULEVARDIER' },{ name:'Jameson com Chá' },
+    { name:'Aperol Sour' },{ name:'Aperol Spritz' },{ name:'KARIRI MEL E LIMÃO' },
+    { name:'Mamba Negra' },{ name:'Blood Mary' },{ name:'Moscou Mula?' },
+    { name:'Bombeirinho de Madame' },{ name:'Café Pint com Rum' },{ name:'New York Sour' },
+    { name:'Caipirinha Jorge Amado' },{ name:'Old Fashioned' },{ name:'Caipirinha Tradiça' },
+    { name:'Penicillin' },{ name:'Rabo de Galo' },{ name:'CAMBALHOTA NA DESCIDA' },
+    { name:'Sweet Manhattan' },{ name:'Campari Tônica' },{ name:'Citrus Martini' },
+    { name:'Tom Collins' },{ name:'Clover Club' },{ name:'Cosmopolitan' },{ name:'Cuba Libre' },
+    { name:'CONHAQUE COM CACAU' },{ name:'Dry Martini' },{ name:'Espresso Martini' },
+    { name:'Fitzgerald' },{ name:'Gengibrite' },{ name:'Gin Tônica' },{ name:'Golden Shower' },
+    { name:'Irish Mule' },{ name:'Jack & Coke' },{ name:'Jagerbomb' }
+  ]},
+  { id:'rango', icon:'🍔', name:'Rango', items:[
+    { name:'LANCHE DE PERNIL' },{ name:'QUEIJO CRENTE (camembert)' },{ name:'X BURGER' },
+    { name:'BOLOVO DE CARNE' },{ name:'BOLOVO À PARMEGIANA' },{ name:'CHORIPAN' },
+    { name:'FALAFEL' },{ name:'GALINHO XIKILIRO' }
+  ]},
+  { id:'vegano', icon:'🌿', name:'Vegano', items:[{ name:'(VEGANO) Falafel' }]},
+  { id:'porcoes', icon:'🍟', name:'Porções', items:[
+    { name:'BATATA FRITA' },{ name:'CHILI FRIES' },{ name:'GUIOZA SUINO' },{ name:'ARANCINI DE CALABRESA' }
+  ]},
+  { id:'sobremesa', icon:'🍮', name:'Sobremesa', items:[{ name:'TEQUENO DE DOCE DE LEITE' }]},
+  { id:'sem-alcool', icon:'🥤', name:'Sem Álcool', items:[
+    { name:'Soda Italiana' },{ name:'Chá Puro Verde' },{ name:'Café / Espresso' },
+    { name:'Café Pint (sem álcool)' },{ name:'Tônica Antártica Lata' },{ name:'RedBull 250ml' },
+    { name:'Água com Gás 500ml' },{ name:'Água sem Gás 500ml' },{ name:'Coca Cola' },
+    { name:'Coca Zero' },{ name:'CORONA ZERO LATA (350ml)' }
+  ]},
+  { id:'destilados', icon:'🥃', name:'Destilados', items:[
+    { name:'Jack Daniels' },{ name:'Jameson' },{ name:'Jim Beam' },{ name:'Woodford Reserve' },
+    { name:'Fireball' },{ name:'Jagermeister' },{ name:'Conhaque Domecq' },{ name:'Tequila' },
+    { name:'Campari' },{ name:'Rum Bacardi' },{ name:'Vodka Smirnoff' },{ name:'CACHAÇAS ARTESANAIS' }
+  ]},
+  { id:'vinhos', icon:'🍷', name:'Vinhos', items:[
+    { name:'Rolha (taxa)' },{ name:'Vinho Tinto Taça (150ml)' },{ name:'RESERVADO CONCHA Y TORO 750ml' },
+    { name:'PORTA 6 (português)' },{ name:'A FLORISTA (português)' },
+    { name:'CASILLERO DEL DIABLO (chileno)' },{ name:'SUSPEITO ROSÉ (750ml)' },
+    { name:'SUSPEITO TINTO (750ml)' },{ name:'SUSPEITO BRANCO (750ml)' },
+    { name:'TAÇA DE VINHO SUSPEITO' }
+  ]}
+];
+
+// ══ DATA LAYER ══
+const DB = {
+  getSettings:()=>JSON.parse(localStorage.getItem('morcego_settings')||'{}'),
+  setSettings:(s)=>localStorage.setItem('morcego_settings',JSON.stringify(s)),
+  getProducts:()=>JSON.parse(localStorage.getItem('morcego_products')||'{}'),
+  setProducts:(p)=>localStorage.setItem('morcego_products',JSON.stringify(p)),
+  getCustomProducts:()=>JSON.parse(localStorage.getItem('morcego_custom_products')||'{}'),
+  setCustomProducts:(p)=>localStorage.setItem('morcego_custom_products',JSON.stringify(p)),
+  getOrders:()=>JSON.parse(localStorage.getItem('morcego_orders')||'[]'),
+  setOrders:(o)=>localStorage.setItem('morcego_orders',JSON.stringify(o)),
+  getReactions:()=>JSON.parse(localStorage.getItem('morcego_reactions')||'{}'),
+  setReactions:(r)=>localStorage.setItem('morcego_reactions',JSON.stringify(r)),
+};
+
+function itemId(catId,name){
+  return catId+'_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').slice(0,30);
+}
+
+// ══ AUTH ══
+const DEFAULT_PW = 'morcego2024';
+let loggedIn = false;
+
+function getPassword(){ return DB.getSettings().adminPassword||DEFAULT_PW; }
+
+function doLogin(){
+  const pw = document.getElementById('pwInput').value;
+  if(pw===getPassword()){
+    loggedIn=true;
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('app').style.flexDirection='column';
+    initApp();
+  } else {
+    document.getElementById('loginErr').textContent='Senha incorreta.';
+    setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
+  }
+}
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function doLogout(){
+  loggedIn=false;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('pwInput').value='';
+}
+
+// ══ NAVIGATION ══
+let currentPage='dashboard';
+let orderFilter='pending';
+
+function navigate(page){
+  currentPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.page===page));
+  document.getElementById('page-'+page).classList.add('active');
+  if(page==='cardapio') renderCardapio();
+  if(page==='pedidos') renderPedidos();
+  if(page==='avaliacoes') renderAvaliacoes();
+  if(page==='config') renderConfig();
+}
+
+// ══ TOAST ══
+function toast(msg,duration=2200){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),duration);
+}
+
+// ══ DASHBOARD ══
+const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const OPEN_DAYS=[4,5,6,0]; // qui,sex,sab,dom
+
+function initDashboard(){
+  const s=DB.getSettings();
+  // wait time
+  const wt=s.waitTime;
+  document.getElementById('waitToggle').checked=!!wt;
+  document.getElementById('waitInput').style.display=wt?'block':'none';
+  if(wt) document.getElementById('waitInput').value=wt;
+  document.getElementById('waitPreview').textContent=wt?'🕐 '+wt:'Desativado';
+  // mesa mode
+  document.getElementById('mesaToggle').checked=!!s.tableModeEnabled;
+  // highlight grid
+  buildHlGrid(s.nightlyHighlight||{});
+  // stats
+  updateStats();
+  updateBarStatus();
+}
+
+function buildHlGrid(hl){
+  const g=document.getElementById('hlGrid');
+  g.innerHTML='';
+  for(let d=0;d<7;d++){
+    const row=document.createElement('div');
+    row.className='hl-row';
+    const data=hl[d]||{};
+    const isOpenDay=OPEN_DAYS.includes(d);
+    row.innerHTML=`
+      <div class="hl-day">${DAYS[d]}</div>
+      <input type="text" placeholder="${isOpenDay?'Nome do item':'(fechado)'}" value="${data.itemName||''}" ${!isOpenDay?'disabled':''} data-d="${d}" data-field="itemName">
+      <input type="text" placeholder="Preço" value="${data.specialPrice||''}" ${!isOpenDay?'disabled':''} data-d="${d}" data-field="specialPrice">
+      <input type="text" placeholder="Label" value="${data.label||''}" ${!isOpenDay?'disabled':''} data-d="${d}" data-field="label">
+    `;
+    g.appendChild(row);
+  }
+}
+
+function saveHighlights(){
+  const s=DB.getSettings();
+  s.nightlyHighlight={};
+  document.querySelectorAll('#hlGrid input[data-d]').forEach(inp=>{
+    const d=parseInt(inp.dataset.d);
+    if(!s.nightlyHighlight[d]) s.nightlyHighlight[d]={};
+    s.nightlyHighlight[d][inp.dataset.field]=inp.value.trim();
+  });
+  DB.setSettings(s);
+  toast('✅ Destaques salvos!');
+}
+
+function toggleWaitTime(){
+  const on=document.getElementById('waitToggle').checked;
+  document.getElementById('waitInput').style.display=on?'block':'none';
+  if(!on){
+    const s=DB.getSettings(); s.waitTime=null; DB.setSettings(s);
+    document.getElementById('waitPreview').textContent='Desativado';
+  }
+}
+
+function saveWaitTime(){
+  const val=document.getElementById('waitInput').value.trim();
+  const s=DB.getSettings(); s.waitTime=val||null; DB.setSettings(s);
+  document.getElementById('waitPreview').textContent=val?'🕐 '+val:'Desativado';
+}
+
+function saveMesaMode(){
+  const on=document.getElementById('mesaToggle').checked;
+  const s=DB.getSettings(); s.tableModeEnabled=on; DB.setSettings(s);
+  toast(on?'Mesa ativo ✅':'Mesa desativado');
+}
+
+function updateStats(){
+  const orders=DB.getOrders();
+  const pending=orders.filter(o=>o.status==='pending').length;
+  document.getElementById('statPending').textContent=pending;
+  const badge=document.getElementById('orderBadge');
+  badge.textContent=pending;
+  badge.style.display=pending>0?'flex':'none';
+}
+
+function updateBarStatus(){
+  const now=new Date();
+  const day=now.getDay(); const h=now.getHours();
+  const isOpen=(day===4&&h>=18)||(day===5&&h<1)||(day===5&&h>=19)||
+    (day===6&&h<1)||(day===6&&h>=18)||(day===0&&h<1)||(day===0&&h>=17&&h<22);
+  const dot=document.getElementById('barStatusDot');
+  const txt=document.getElementById('barStatusTxt');
+  dot.className='sdot '+(isOpen?'green':'red');
+  txt.textContent=isOpen?'Aberto':'Fechado';
+}
+
+// ══ CARDÁPIO ══
+function getAllProducts(){
+  const overrides=DB.getProducts();
+  const custom=DB.getCustomProducts();
+  let all=[];
+  BASE_CATEGORIES.forEach(cat=>{
+    cat.items.forEach(item=>{
+      const id=itemId(cat.id,item.name);
+      const ov=overrides[id]||{};
+      if(!ov.deleted){
+        all.push({
+          id, catId:cat.id, catName:cat.name, catIcon:cat.icon,
+          name:ov.name||item.name,
+          desc:ov.desc||item.desc||'',
+          price:ov.price||item.price||'',
+          img:ov.img||item.img||'',
+          tags:ov.tags||[],
+          calories:ov.calories||null,
+          allergens:ov.allergens||[],
+          available:ov.available!==false,
+          isCustom:false,
+          _ov:ov
+        });
+      }
+    });
+  });
+  Object.entries(custom).forEach(([id,p])=>{
+    if(!p.deleted){
+      all.push({id,...p,isCustom:true});
+    }
+  });
+  return all;
+}
+
+function renderCardapio(){
+  const q=(document.getElementById('prodSearch').value||'').toLowerCase();
+  const catF=document.getElementById('catFilter').value;
+
+  // Populate cat filter once
+  const sel=document.getElementById('catFilter');
+  if(sel.options.length<=1){
+    BASE_CATEGORIES.forEach(c=>{
+      const o=document.createElement('option');
+      o.value=c.id; o.textContent=c.icon+' '+c.name;
+      sel.appendChild(o);
+    });
+  }
+
+  const products=getAllProducts().filter(p=>{
+    if(catF && p.catId!==catF) return false;
+    if(q && !p.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const list=document.getElementById('prodList');
+  list.innerHTML='';
+
+  if(!products.length){
+    list.innerHTML='<div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">Nenhum produto encontrado.</div>';
+    return;
+  }
+
+  products.forEach(p=>{
+    const el=document.createElement('div');
+    el.className='prod-item'+(p.available?'':' unavailable');
+    const tags=p.tags.map(t=>`<span class="prod-badge ${t}">${t==='vegano'?'🌱 vegano':t==='sem-gluten'?'🌾 s/glúten':'🔥 +pedido'}</span>`).join('');
+    const esg=p.available?'':`<span class="esgotado-label">ESGOTADO</span>`;
+    el.innerHTML=`
+      <img class="prod-thumb" src="${p.img||''}" alt="${p.name}" onerror="this.style.display='none'">
+      <div class="prod-info">
+        <div class="prod-name">${p.name} ${tags}</div>
+        <div class="prod-meta">${p.catIcon||''} ${p.catName||''} · ${p.price||'—'} ${esg}${p.calories?'· '+p.calories+'kcal':''}</div>
+      </div>
+      <div class="prod-actions">
+        <label class="toggle" title="${p.available?'Marcar esgotado':'Marcar disponível'}">
+          <input type="checkbox" ${p.available?'checked':''} onchange="toggleAvailable('${p.id}','${p.isCustom}',this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+        <button class="btn btn-icon btn-sm" onclick='openProductModal(${JSON.stringify(p)})' title="Editar">✏️</button>
+        <button class="btn btn-icon btn-sm" onclick="deleteProduct('${p.id}','${p.isCustom}')" title="Excluir">🗑</button>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+function toggleAvailable(id,isCustom,val){
+  if(isCustom==='true'){
+    const c=DB.getCustomProducts(); c[id]=c[id]||{}; c[id].available=val; DB.setCustomProducts(c);
+  } else {
+    const p=DB.getProducts(); p[id]=p[id]||{}; p[id].available=val; DB.setProducts(p);
+  }
+  toast(val?'✅ Disponível':'🚫 Esgotado');
+}
+
+function deleteProduct(id,isCustom){
+  if(!confirm('Excluir este produto?')) return;
+  if(isCustom==='true'){
+    const c=DB.getCustomProducts(); if(c[id]){c[id].deleted=true;} DB.setCustomProducts(c);
+  } else {
+    const p=DB.getProducts(); p[id]=p[id]||{}; p[id].deleted=true; DB.setProducts(p);
+  }
+  renderCardapio(); toast('🗑 Produto removido');
+}
+
+// ══ PRODUCT MODAL ══
+let editingProduct=null;
+const ALLERGEN_LIST=['glúten','lactose','ovo','amendoim','nozes','peixe','frutos do mar','soja'];
+const TAG_LIST=['vegano','sem-gluten','mais-pedido'];
+
+function openProductModal(prod){
+  editingProduct=prod;
+  document.getElementById('modalTitle').textContent=prod?'Editar Produto':'Novo Produto';
+  const cats=BASE_CATEGORIES.map(c=>`<option value="${c.id}" ${prod&&prod.catId===c.id?'selected':''}>${c.icon} ${c.name}</option>`).join('');
+
+  const allergenChips=ALLERGEN_LIST.map(a=>{
+    const active=prod&&prod.allergens&&prod.allergens.includes(a)?'active':'';
+    return `<button type="button" class="chip ${active}" data-allergen="${a}" onclick="this.classList.toggle('active')">${a}</button>`;
+  }).join('');
+  const tagChips=TAG_LIST.map(t=>{
+    const active=prod&&prod.tags&&prod.tags.includes(t)?'active':'';
+    const lbl=t==='vegano'?'🌱 vegano':t==='sem-gluten'?'🌾 sem glúten':'🔥 mais pedido';
+    return `<button type="button" class="chip ${active}" data-tag="${t}" onclick="this.classList.toggle('active')">${lbl}</button>`;
+  }).join('');
+
+  document.getElementById('modalForm').innerHTML=`
+    ${!prod?`<div class="form-row"><label>Categoria</label><select id="f-catId">${cats}</select></div>`:''}
+    <div class="form-row"><label>Nome do Produto</label><input id="f-name" value="${prod?.name||''}"></div>
+    <div class="form-row"><label>Descrição</label><textarea id="f-desc">${prod?.desc||''}</textarea></div>
+    <div class="grid2">
+      <div class="form-row"><label>Preço (ex: R$35,00)</label><input id="f-price" value="${prod?.price||''}"></div>
+      <div class="form-row"><label>Prefixo (opcional)</label><input id="f-prefix" value="${prod?.prefix||''}" placeholder="A partir de"></div>
+    </div>
+    <div class="form-row"><label>URL da Imagem</label><input id="f-img" value="${prod?.img||''}"></div>
+    <div class="form-row"><label>Calorias (kcal)</label><input id="f-cal" type="number" value="${prod?.calories||''}" placeholder="ex: 450"></div>
+    <div class="form-row"><label>Alérgenos</label><div class="chips-row">${allergenChips}</div></div>
+    <div class="form-row"><label>Tags</label><div class="chips-row">${tagChips}</div></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-gold" onclick="saveProduct()">Salvar</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingProduct=null;
+}
+
+function saveProduct(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('⚠️ Nome obrigatório');return;}
+  const allergens=[...document.querySelectorAll('#modalForm .chip[data-allergen].active')].map(c=>c.dataset.allergen);
+  const tags=[...document.querySelectorAll('#modalForm .chip[data-tag].active')].map(c=>c.dataset.tag);
+  const data={
+    name,
+    desc:document.getElementById('f-desc').value.trim(),
+    price:document.getElementById('f-price').value.trim(),
+    prefix:document.getElementById('f-prefix').value.trim(),
+    img:document.getElementById('f-img').value.trim(),
+    calories:document.getElementById('f-cal').value?parseInt(document.getElementById('f-cal').value):null,
+    allergens, tags, available:true
+  };
+
+  if(editingProduct){
+    // Update existing
+    if(editingProduct.isCustom){
+      const c=DB.getCustomProducts(); c[editingProduct.id]={...c[editingProduct.id],...data}; DB.setCustomProducts(c);
+    } else {
+      const p=DB.getProducts(); p[editingProduct.id]={...p[editingProduct.id],...data}; DB.setProducts(p);
+    }
+  } else {
+    // New product
+    const catId=document.getElementById('f-catId').value;
+    const id='custom_'+Date.now();
+    const catInfo=BASE_CATEGORIES.find(c=>c.id===catId);
+    data.catId=catId; data.catName=catInfo?.name||catId; data.catIcon=catInfo?.icon||'';
+    const c=DB.getCustomProducts(); c[id]=data; DB.setCustomProducts(c);
+  }
+
+  closeModal();
+  renderCardapio();
+  toast('✅ Produto salvo!');
+}
+
+// ══ PEDIDOS ══
+let orderPollInterval=null;
+
+function setOrderFilter(f){
+  orderFilter=f;
+  document.querySelectorAll('[id^="filterBtn-"]').forEach(b=>{
+    b.className='btn btn-outline btn-sm';
+  });
+  document.getElementById('filterBtn-'+f).className='btn btn-gold btn-sm';
+  renderPedidos();
+}
+
+function renderPedidos(){
+  updateStats();
+  const orders=DB.getOrders();
+  const filtered=orderFilter==='all'?orders:orders.filter(o=>o.status===orderFilter);
+  const list=document.getElementById('orderList');
+
+  if(!filtered.length){
+    list.innerHTML=`<div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">${orders.length?'Nenhum pedido com este filtro.':'Nenhum pedido ainda.<br>Ative o Modo Mesa no dashboard para receber pedidos.'}</div>`;
+    return;
+  }
+
+  const statusLabel={pending:'🟡 Novo',confirmed:'🔵 Confirmado',ready:'🟢 Pronto',done:'✅ Entregue'};
+  const statusClass={pending:'pending',confirmed:'confirmed',ready:'ready',done:'ready'};
+
+  list.innerHTML=filtered.slice().reverse().map(order=>{
+    const total=order.items.reduce((s,i)=>{
+      const v=parseFloat((i.price||'').replace(/[^0-9,]/g,'').replace(',','.'));
+      return s+(isNaN(v)?0:v*i.qty);
+    },0);
+    const items=order.items.map(i=>`
+      <div class="order-item-row">
+        <span>${i.qty}x ${i.name}${i.note?' <em style="color:var(--dim);font-size:.75rem">(${i.note})</em>':''}</span>
+        <span>${i.price}</span>
+      </div>`).join('');
+    const t=new Date(order.timestamp);
+    const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
+    let actions='';
+    if(order.status==='pending') actions=`<button class="btn btn-gold btn-sm" onclick="updateOrder('${order.id}','confirmed')">✅ Confirmar</button><button class="btn btn-danger btn-sm" onclick="updateOrder('${order.id}','cancelled')">✕ Cancelar</button>`;
+    else if(order.status==='confirmed') actions=`<button class="btn btn-gold btn-sm" onclick="updateOrder('${order.id}','ready')">🟢 Pronto</button>`;
+    else if(order.status==='ready') actions=`<button class="btn btn-outline btn-sm" onclick="updateOrder('${order.id}','done')">✅ Entregue</button>`;
+    return `
+      <div class="order-card">
+        <div class="order-header">
+          <span class="order-table">Mesa ${order.table}</span>
+          <span class="order-status ${statusClass[order.status]||'pending'}">${statusLabel[order.status]||order.status}</span>
+          <span class="order-time">${timeStr}</span>
+        </div>
+        <div class="order-body">${items}</div>
+        <div class="order-total"><span>Total estimado</span><span>R$ ${total.toFixed(2).replace('.',',')}</span></div>
+        ${actions?`<div class="order-actions">${actions}</div>`:''}
+      </div>`;
+  }).join('');
+}
+
+function updateOrder(id,status){
+  const orders=DB.getOrders();
+  const o=orders.find(x=>x.id===id);
+  if(o){ o.status=status; DB.setOrders(orders); }
+  renderPedidos();
+  updateStats();
+  toast(status==='confirmed'?'✅ Confirmado':status==='ready'?'🟢 Pronto':status==='done'?'✅ Entregue':'Atualizado');
+}
+
+function clearDoneOrders(){
+  const orders=DB.getOrders().filter(o=>o.status!=='done'&&o.status!=='cancelled');
+  DB.setOrders(orders);
+  renderPedidos();
+  toast('🗑 Pedidos finalizados removidos');
+}
+
+function clearOrders(){
+  if(!confirm('Limpar TODOS os pedidos?')) return;
+  DB.setOrders([]);
+  renderPedidos();
+  toast('🗑 Pedidos limpos');
+}
+
+// ══ AVALIAÇÕES ══
+function renderAvaliacoes(){
+  const reactions=DB.getReactions();
+  const sort=document.getElementById('reactSort').value;
+  const entries=Object.entries(reactions).map(([id,r])=>({id,...r,total:(r.fire||0)+(r.heart||0)+(r.meh||0)}));
+  entries.sort((a,b)=>((b[sort]||b.fire||0)-(a[sort]||a.fire||0)));
+  const maxTotal=Math.max(...entries.map(e=>e.total),1);
+  document.getElementById('reactBody').innerHTML=entries.length?entries.map(e=>{
+    const name=e.id.split('_').slice(1).join(' ').replace(/_/g,' ');
+    const pct=Math.round((e.total/maxTotal)*100);
+    return `<tr>
+      <td>${name}</td>
+      <td>🔥 ${e.fire||0}</td>
+      <td>❤️ ${e.heart||0}</td>
+      <td>😐 ${e.meh||0}</td>
+      <td><div style="display:flex;align-items:center;gap:.4rem"><div class="react-bar" style="width:60px"><div class="react-bar-fill" style="width:${pct}%;background:var(--gold)"></div></div>${e.total}</div></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:1.5rem">Sem avaliações ainda.</td></tr>';
+}
+
+function clearReactions(){
+  if(!confirm('Zerar todas as avaliações?')) return;
+  DB.setReactions({});
+  renderAvaliacoes();
+  toast('🗑 Avaliações zeradas');
+}
+
+// ══ CONFIG ══
+function renderConfig(){
+  const url=location.href.replace('admin.html','index.html');
+  document.getElementById('cardapioUrl').value=url;
+}
+
+function copyUrl(){
+  const url=document.getElementById('cardapioUrl').value;
+  navigator.clipboard.writeText(url).then(()=>toast('🔗 Link copiado!')).catch(()=>{
+    document.getElementById('cardapioUrl').select();
+    document.execCommand('copy');
+    toast('🔗 Link copiado!');
+  });
+}
+
+function changePassword(){
+  const pw=document.getElementById('newPw').value;
+  const pw2=document.getElementById('newPwConfirm').value;
+  if(!pw){toast('⚠️ Digite a nova senha');return;}
+  if(pw!==pw2){toast('⚠️ Senhas não coincidem');return;}
+  if(pw.length<6){toast('⚠️ Mínimo 6 caracteres');return;}
+  const s=DB.getSettings(); s.adminPassword=pw; DB.setSettings(s);
+  document.getElementById('newPw').value='';
+  document.getElementById('newPwConfirm').value='';
+  toast('✅ Senha alterada!');
+}
+
+function exportData(){
+  const data={
+    settings:DB.getSettings(),
+    products:DB.getProducts(),
+    customProducts:DB.getCustomProducts(),
+    orders:DB.getOrders(),
+    reactions:DB.getReactions(),
+    exportedAt:new Date().toISOString()
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='morcego_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  toast('📥 Exportado!');
+}
+
+// ══ INIT ══
+function initApp(){
+  initDashboard();
+  // Poll for new orders every 8s when on pedidos tab
+  clearInterval(orderPollInterval);
+  orderPollInterval=setInterval(()=>{
+    updateStats();
+    if(currentPage==='pedidos') renderPedidos();
+  },8000);
+}
+</script>
+</body>
+</html>
