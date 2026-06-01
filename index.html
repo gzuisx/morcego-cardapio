@@ -493,7 +493,7 @@ body::before{
   </div>
   <h1 class="hero-title">MORCEGO</h1>
   <p class="hero-sub">Lanchonete · Santo André · SP</p>
-  <p class="hero-address">📍 R. [ENDEREÇO] — Santo André &nbsp;·&nbsp; 🕕 18h às 23:59</p>
+  <p class="hero-address">📍 R. Siqueira Campos, 1039 — Centro, Santo André &nbsp;·&nbsp; QUI–SAB 18h/01h &nbsp;·&nbsp; DOM 17h/22h</p>
   <button class="hero-cta" id="heroCta">Ver Cardápio</button>
   <p class="hero-hint">toque em qualquer lugar</p>
 </div>
@@ -581,7 +581,7 @@ body::before{
 
 <script>
 // ══ WHATSAPP NUMBER — trocar pelo número real ══
-const WPP_NUMBER = '5511999999999'; // ← altere para o número do Morcego
+const WPP_NUMBER = null; // sem WhatsApp por enquanto
 
 // ══ DATA ══
 const Z  = 'https://zig-public.zig.fun/images/';
@@ -1041,8 +1041,14 @@ function openModal(item,cat){
   img.src=item.img; img.alt=item.name;
   imgWrap.appendChild(img);
   // WhatsApp link
-  const wppMsg = encodeURIComponent(`Olá! Quero pedir:\n*${item.name}* — ${item.price}\n\nCardápio: MORCEGO Lanchonete, Santo André`);
-  document.getElementById('modalWpp').href=`https://wa.me/${WPP_NUMBER}?text=${wppMsg}`;
+  const wppBtn = document.getElementById('modalWpp');
+  if(WPP_NUMBER){
+    const wppMsg = encodeURIComponent(`Olá! Quero pedir:\n*${item.name}* — ${item.price}\n\nCardápio: MORCEGO Lanchonete, Santo André`);
+    wppBtn.href=`https://wa.me/${WPP_NUMBER}?text=${wppMsg}`;
+    wppBtn.style.display='';
+  } else {
+    wppBtn.style.display='none';
+  }
   overlay.classList.add('open');
   document.body.style.overflow='hidden';
   // select chip interaction
@@ -1128,10 +1134,21 @@ function updateNav(){
 }
 window.addEventListener('scroll',updateNav,{passive:true});
 
-// ══ STATUS ABERTO/FECHADO (18h–23:59) ══
+// ══ STATUS ABERTO/FECHADO ══
+// QUI 18h-01h | SEX 19h-01h | SAB 18h-01h | DOM 17h-22h | SEG-QUA fechado
 function updateStatus(){
-  const h = new Date().getHours();
-  const isOpen = h >= 18; // aberto das 18:00 até 23:59
+  const now = new Date();
+  const day = now.getDay(); // 0=dom,1=seg,2=ter,3=qua,4=qui,5=sex,6=sab
+  const h = now.getHours();
+  const isOpen = (
+    (day === 4 && h >= 18) ||                    // qui: 18h→meia-noite
+    (day === 5 && h < 1)   ||                    // sex: meia-noite→01h (vira do qui)
+    (day === 5 && h >= 19) ||                    // sex: 19h→meia-noite
+    (day === 6 && h < 1)   ||                    // sab: meia-noite→01h (vira do sex)
+    (day === 6 && h >= 18) ||                    // sab: 18h→meia-noite
+    (day === 0 && h < 1)   ||                    // dom: meia-noite→01h (vira do sab)
+    (day === 0 && h >= 17 && h < 22)             // dom: 17h→22h
+  );
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusTxt');
   dot.classList.toggle('closed', !isOpen);
