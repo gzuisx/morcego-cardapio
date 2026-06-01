@@ -215,6 +215,31 @@ body::before{
 }
 
 /* ═══ CART ═══ */
+/* ═══ CALL BUTTONS ═══ */
+#callBar{
+  position:fixed;bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 4.5rem);right:1rem;
+  z-index:90;display:none;flex-direction:column;gap:.4rem;
+}
+#callBar.show{display:flex}
+.call-btn{
+  background:rgba(13,11,18,.92);border:1px solid var(--bord2);border-radius:50px;
+  padding:.5rem 1rem;color:var(--cream);font-size:.75rem;font-weight:600;
+  cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.5);white-space:nowrap;
+  backdrop-filter:blur(8px);transition:all .18s;
+}
+.call-btn:active{background:var(--glow);color:var(--gold)}
+@media(min-width:768px){#callBar{bottom:4.5rem}}
+
+/* ═══ CALL TOAST ═══ */
+.call-toast{
+  position:fixed;top:5rem;left:50%;transform:translateX(-50%);
+  background:var(--card);border:1px solid var(--bord2);border-radius:8px;
+  padding:.65rem 1.2rem;font-size:.82rem;color:var(--cream);
+  z-index:9999;white-space:nowrap;animation:fadeIn .3s ease;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
 #cartBtn{
   position:fixed;bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 1rem);right:1rem;
   z-index:90;display:none;
@@ -595,6 +620,10 @@ body::before{
   <button class="order-sent-btn" onclick="dismissOrderSent()">Voltar ao Cardápio</button>
 </div>
 
+<div id="callBar">
+  <button class="call-btn" onclick="callGarcom()">🙋 Chamar Garçom</button>
+  <button class="call-btn" onclick="callConta()">💳 Solicitar Conta</button>
+</div>
 <button id="cartBtn" onclick="openCart()">🛒 <span id="cartCount">0</span></button>
 
 <canvas id="batCanvas"></canvas>
@@ -761,20 +790,68 @@ let currentMesa=sessionStorage.getItem('morcego_mesa')||null;
 let cart=[];
 
 function initMesaMode(){
+  // QR Code por mesa: ?table=N pula tela de input
+  const urlTable=new URLSearchParams(location.search).get('table');
+  if(urlTable&&parseInt(urlTable)>0){
+    currentMesa=parseInt(urlTable).toString();
+    sessionStorage.setItem('morcego_mesa',currentMesa);
+    updateCallBar(); updateCartBtn();
+    return;
+  }
   const mesaEnabled=_adminSettings.tableModeEnabled;
   if(mesaEnabled&&!currentMesa){
     document.getElementById('mesaScreen').classList.add('show');
+  } else {
+    updateCallBar(); updateCartBtn();
   }
 }
 function confirmMesa(){
   const n=document.getElementById('mesaInput').value;
-  if(!n||parseInt(n)<1){
-    document.getElementById('mesaInput').focus();
-    return;
-  }
+  if(!n||parseInt(n)<1){document.getElementById('mesaInput').focus();return;}
   currentMesa=parseInt(n).toString();
   sessionStorage.setItem('morcego_mesa',currentMesa);
   document.getElementById('mesaScreen').classList.remove('show');
+  updateCallBar(); updateCartBtn();
+}
+
+// ══ CALL BUTTONS (garçom / conta) ══
+function updateCallBar(){
+  const show=!!(_adminSettings.tableModeEnabled&&currentMesa);
+  document.getElementById('callBar').classList.toggle('show',show);
+}
+function callGarcom(){
+  _saveCall('waiter');
+  _showCallToast('🙋 Garçom chamado! Aguarde.');
+}
+function callConta(){
+  _saveCall('account');
+  _showCallToast('💳 Conta solicitada! Aguarde.');
+}
+function _saveCall(type){
+  const calls=JSON.parse(localStorage.getItem('morcego_calls')||'[]');
+  calls.push({id:Date.now().toString(),table:currentMesa,type,status:'pending',timestamp:new Date().toISOString()});
+  localStorage.setItem('morcego_calls',JSON.stringify(calls));
+}
+function _showCallToast(msg){
+  const el=document.createElement('div');
+  el.className='call-toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2500);
+}
+
+// ══ COMPARTILHAMENTO DE PRODUTO (?item=negroni) ══
+function initShareUrl(){
+  const slug=new URLSearchParams(location.search).get('item');
+  if(!slug) return;
+  for(const cat of categories){
+    for(const item of cat.items){
+      const s=item.name.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_');
+      if(s.includes(slug)||slug.includes(s.slice(0,8))){
+        setTimeout(()=>{dismissHero();setTimeout(()=>openModal(item,cat),700);},300);
+        return;
+      }
+    }
+  }
 }
 document.getElementById('mesaInput').addEventListener('keydown',e=>{if(e.key==='Enter')confirmMesa();});
 
@@ -1517,6 +1594,7 @@ updateNav();
 initMesaMode();
 initWaitBanner();
 initNightlyHighlight();
+initShareUrl();
 
 // ══ PWA SERVICE WORKER ══
 if('serviceWorker' in navigator){

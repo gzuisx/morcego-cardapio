@@ -186,6 +186,29 @@ textarea{resize:vertical;min-height:60px}
 .stat-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace}
 .wait-input-row{display:flex;align-items:center;gap:.75rem}
 .wait-preview{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--green);min-width:80px}
+
+/* ══ PULSE NEW ORDER ══ */
+@keyframes pulseGold{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,0);border-color:var(--bord)}50%{box-shadow:0 0 0 5px rgba(201,162,39,.25);border-color:var(--bord2)}}
+.order-card.is-new{animation:pulseGold 1.4s ease-in-out infinite}
+
+/* ══ CALL CARD ══ */
+.call-card{display:flex;align-items:center;gap:.75rem;background:var(--card);border:1px solid var(--bord);border-radius:8px;padding:.7rem 1rem;margin-bottom:.5rem}
+.call-type{font-size:1.2rem}
+.call-info{flex:1}
+.call-mesa{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--gold)}
+.call-label{font-size:.65rem;color:var(--dim);font-family:'DM Mono',monospace;margin-top:2px}
+.call-time{font-size:.62rem;color:var(--dim);font-family:'DM Mono',monospace}
+
+/* ══ FINANCIAL ══ */
+.fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem}
+@media(max-width:480px){.fin-grid{grid-template-columns:1fr}}
+.fin-card{background:var(--card);border:1px solid var(--bord);border-radius:10px;padding:.85rem;text-align:center}
+.fin-value{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold)}
+.fin-label{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace;margin-top:.2rem}
+.seller-row{display:flex;align-items:center;gap:.75rem;padding:.5rem 0;border-bottom:1px solid var(--bord)}
+.seller-rank{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--gold);min-width:1.5rem}
+.seller-name{flex:1;font-size:.82rem}
+.seller-qty{font-size:.72rem;color:var(--dim);font-family:'DM Mono',monospace}
 </style>
 </head>
 <body>
@@ -227,6 +250,12 @@ textarea{resize:vertical;min-height:60px}
     </button>
     <button class="tab" data-page="avaliacoes" onclick="navigate('avaliacoes')">
       <span class="tab-icon">⭐</span>Avaliações
+    </button>
+    <button class="tab" data-page="chamados" onclick="navigate('chamados')">
+      <span class="tab-icon">🔔</span>Chamados
+    </button>
+    <button class="tab" data-page="financeiro" onclick="navigate('financeiro')">
+      <span class="tab-icon">💰</span>Financeiro
     </button>
     <button class="tab" data-page="config" onclick="navigate('config')">
       <span class="tab-icon">⚙️</span>Config
@@ -301,11 +330,17 @@ textarea{resize:vertical;min-height:60px}
           <button class="btn btn-danger btn-sm" onclick="clearDoneOrders()">Limpar finalizados</button>
         </div>
       </div>
-      <div style="display:flex;gap:.4rem;margin-bottom:1rem;overflow-x:auto">
-        <button class="btn btn-outline btn-sm" id="filterBtn-all" onclick="setOrderFilter('all')">Todos</button>
-        <button class="btn btn-gold btn-sm" id="filterBtn-pending" onclick="setOrderFilter('pending')">Pendentes</button>
-        <button class="btn btn-outline btn-sm" id="filterBtn-confirmed" onclick="setOrderFilter('confirmed')">Confirmados</button>
+      <div style="display:flex;gap:.4rem;margin-bottom:.6rem;overflow-x:auto;flex-wrap:wrap">
+        <select id="histFilter" onchange="renderPedidos()" style="width:auto;font-size:.72rem;padding:.3rem .6rem">
+          <option value="active">Ativos</option>
+          <option value="today">Hoje (todos)</option>
+          <option value="all">Todos os tempos</option>
+        </select>
+        <button class="btn btn-gold btn-sm" id="filterBtn-all" onclick="setOrderFilter('all')">Todos</button>
+        <button class="btn btn-outline btn-sm" id="filterBtn-new" onclick="setOrderFilter('new')">Novos</button>
+        <button class="btn btn-outline btn-sm" id="filterBtn-preparing" onclick="setOrderFilter('preparing')">Preparando</button>
         <button class="btn btn-outline btn-sm" id="filterBtn-ready" onclick="setOrderFilter('ready')">Prontos</button>
+        <button class="btn btn-outline btn-sm" id="filterBtn-delivered" onclick="setOrderFilter('delivered')">Entregues</button>
       </div>
       <div id="orderList"></div>
     </div>
@@ -326,6 +361,35 @@ textarea{resize:vertical;min-height:60px}
         <thead><tr><th>Produto</th><th>🔥</th><th>❤️</th><th>😐</th><th>Total</th></tr></thead>
         <tbody id="reactBody"></tbody>
       </table>
+    </div>
+
+    <!-- ── CHAMADOS ── -->
+    <div class="page" id="page-chamados">
+      <div class="sh"><h2>🔔 Chamados das Mesas</h2>
+        <div class="sh-actions">
+          <button class="btn btn-outline btn-sm" onclick="renderChamados()">↻</button>
+          <button class="btn btn-danger btn-sm" onclick="clearCalls()">Limpar</button>
+        </div>
+      </div>
+      <div id="callList"></div>
+    </div>
+
+    <!-- ── FINANCEIRO ── -->
+    <div class="page" id="page-financeiro">
+      <div class="sh"><h2>💰 Financeiro</h2>
+        <div class="sh-actions">
+          <button class="btn btn-outline btn-sm" onclick="renderFinanceiro()">↻</button>
+        </div>
+      </div>
+      <div class="fin-grid" id="finCards"></div>
+      <div class="card" style="margin-bottom:.75rem">
+        <div class="sh"><h2>🏆 Mais Vendidos</h2></div>
+        <div id="sellerList"></div>
+      </div>
+      <div class="card">
+        <div class="sh"><h2>📋 Pedidos por Status</h2></div>
+        <div id="statusBreakdown"></div>
+      </div>
     </div>
 
     <!-- ── CONFIG ── -->
@@ -499,7 +563,24 @@ function navigate(page){
   if(page==='cardapio') renderCardapio();
   if(page==='pedidos') renderPedidos();
   if(page==='avaliacoes') renderAvaliacoes();
+  if(page==='chamados') renderChamados();
+  if(page==='financeiro') renderFinanceiro();
   if(page==='config') renderConfig();
+}
+
+// ══ SOUND NOTIFICATION ══
+function playSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [[880,.0],[660,.1],[880,.2]].forEach(([freq,t])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='sine';o.frequency.value=freq;
+      g.gain.setValueAtTime(.25,ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.18);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.2);
+    });
+  }catch(e){}
 }
 
 // ══ TOAST ══
@@ -790,11 +871,13 @@ function saveProduct(){
 // ══ PEDIDOS ══
 let orderPollInterval=null;
 
+// ══ SEEN ORDERS (para detectar novos) ══
+let seenOrderIds=new Set(JSON.parse(localStorage.getItem('morcego_seen_orders')||'[]'));
+function markSeen(id){seenOrderIds.add(id);localStorage.setItem('morcego_seen_orders',JSON.stringify([...seenOrderIds]));}
+
 function setOrderFilter(f){
   orderFilter=f;
-  document.querySelectorAll('[id^="filterBtn-"]').forEach(b=>{
-    b.className='btn btn-outline btn-sm';
-  });
+  document.querySelectorAll('[id^="filterBtn-"]').forEach(b=>b.className='btn btn-outline btn-sm');
   document.getElementById('filterBtn-'+f).className='btn btn-gold btn-sm';
   renderPedidos();
 }
@@ -802,54 +885,61 @@ function setOrderFilter(f){
 function renderPedidos(){
   updateStats();
   const orders=DB.getOrders();
-  const filtered=orderFilter==='all'?orders:orders.filter(o=>o.status===orderFilter);
+  // History filter
+  const histFilter=document.getElementById('histFilter')?.value||'active';
+  let filtered;
+  if(histFilter==='active') filtered=orders.filter(o=>!['closed','cancelled'].includes(o.status));
+  else if(histFilter==='today'){
+    const today=new Date().toDateString();
+    filtered=orders.filter(o=>new Date(o.timestamp).toDateString()===today);
+  } else filtered=orders;
+  if(orderFilter!=='all') filtered=filtered.filter(o=>o.status===orderFilter);
   const list=document.getElementById('orderList');
 
   if(!filtered.length){
-    list.innerHTML=`<div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">${orders.length?'Nenhum pedido com este filtro.':'Nenhum pedido ainda.<br>Ative o Modo Mesa no dashboard para receber pedidos.'}</div>`;
+    list.innerHTML=`<div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">${orders.length?'Nenhum pedido com este filtro.':'Nenhum pedido ainda.<br>Ative o Modo Mesa no dashboard.'}</div>`;
     return;
   }
 
-  const statusLabel={pending:'🟡 Novo',confirmed:'🔵 Confirmado',ready:'🟢 Pronto',done:'✅ Entregue'};
-  const statusClass={pending:'pending',confirmed:'confirmed',ready:'ready',done:'ready'};
+  const statusLabel={new:'🟡 Novo',preparing:'🟠 Preparando',ready:'🟢 Pronto',delivered:'🔵 Entregue',closed:'✅ Fechado',cancelled:'❌ Cancelado',pending:'🟡 Novo'};
+  const statusClass={new:'pending',preparing:'pending',ready:'ready',delivered:'confirmed',closed:'ready',cancelled:'pending',pending:'pending'};
 
   list.innerHTML=filtered.slice().reverse().map(order=>{
+    const isNew=!seenOrderIds.has(order.id)&&(order.status==='new'||order.status==='pending');
     const total=order.items.reduce((s,i)=>{
       const v=parseFloat((i.price||'').replace(/[^0-9,]/g,'').replace(',','.'));
       return s+(isNaN(v)?0:v*i.qty);
     },0);
-    const items=order.items.map(i=>`
-      <div class="order-item-row">
-        <span>${i.qty}x ${i.name}${i.note?' <em style="color:var(--dim);font-size:.75rem">(${i.note})</em>':''}</span>
-        <span>${i.price}</span>
-      </div>`).join('');
+    const items=order.items.map(i=>`<div class="order-item-row"><span>${i.qty}x ${i.name}</span><span>${i.price}</span></div>`).join('');
     const t=new Date(order.timestamp);
     const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
+    const st=order.status||'pending';
     let actions='';
-    if(order.status==='pending') actions=`<button class="btn btn-gold btn-sm" onclick="updateOrder('${order.id}','confirmed')">✅ Confirmar</button><button class="btn btn-danger btn-sm" onclick="updateOrder('${order.id}','cancelled')">✕ Cancelar</button>`;
-    else if(order.status==='confirmed') actions=`<button class="btn btn-gold btn-sm" onclick="updateOrder('${order.id}','ready')">🟢 Pronto</button>`;
-    else if(order.status==='ready') actions=`<button class="btn btn-outline btn-sm" onclick="updateOrder('${order.id}','done')">✅ Entregue</button>`;
-    return `
-      <div class="order-card">
-        <div class="order-header">
-          <span class="order-table">Mesa ${order.table}</span>
-          <span class="order-status ${statusClass[order.status]||'pending'}">${statusLabel[order.status]||order.status}</span>
-          <span class="order-time">${timeStr}</span>
-        </div>
-        <div class="order-body">${items}</div>
-        <div class="order-total"><span>Total estimado</span><span>R$ ${total.toFixed(2).replace('.',',')}</span></div>
-        ${actions?`<div class="order-actions">${actions}</div>`:''}
-      </div>`;
+    if(st==='new'||st==='pending') actions=`<button class="btn btn-gold btn-sm" onclick="updateOrder('${order.id}','preparing')">🟠 Preparando</button><button class="btn btn-danger btn-sm" onclick="updateOrder('${order.id}','cancelled')">✕ Cancelar</button>`;
+    else if(st==='preparing') actions=`<button class="btn btn-gold btn-sm" onclick="updateOrder('${order.id}','ready')">🟢 Pronto</button>`;
+    else if(st==='ready') actions=`<button class="btn btn-outline btn-sm" onclick="updateOrder('${order.id}','delivered')">🔵 Entregar</button>`;
+    else if(st==='delivered') actions=`<button class="btn btn-outline btn-sm" onclick="updateOrder('${order.id}','closed')">✅ Fechar</button>`;
+    return `<div class="order-card${isNew?' is-new':''}" id="oc-${order.id}" onclick="markSeen('${order.id}');document.getElementById('oc-${order.id}')?.classList.remove('is-new')">
+      <div class="order-header">
+        <span class="order-table">Mesa ${order.table}</span>
+        <span class="order-status ${statusClass[st]}">${statusLabel[st]||st}</span>
+        <span class="order-time">${timeStr}</span>
+      </div>
+      <div class="order-body">${items}</div>
+      <div class="order-total"><span>Total estimado</span><span>R$ ${total.toFixed(2).replace('.',',')}</span></div>
+      ${actions?`<div class="order-actions">${actions}</div>`:''}
+    </div>`;
   }).join('');
 }
 
 function updateOrder(id,status){
   const orders=DB.getOrders();
   const o=orders.find(x=>x.id===id);
-  if(o){ o.status=status; DB.setOrders(orders); }
-  renderPedidos();
-  updateStats();
-  toast(status==='confirmed'?'✅ Confirmado':status==='ready'?'🟢 Pronto':status==='done'?'✅ Entregue':'Atualizado');
+  if(o){o.status=status;DB.setOrders(orders);}
+  markSeen(id);
+  renderPedidos();updateStats();
+  const labels={preparing:'🟠 Preparando',ready:'🟢 Pronto',delivered:'🔵 Entregue',closed:'✅ Fechado',cancelled:'Cancelado'};
+  toast(labels[status]||'Atualizado');
 }
 
 function clearDoneOrders(){
@@ -864,6 +954,105 @@ function clearOrders(){
   DB.setOrders([]);
   renderPedidos();
   toast('🗑 Pedidos limpos');
+}
+
+// ══ CHAMADOS ══
+function DB_getCalls(){return JSON.parse(localStorage.getItem('morcego_calls')||'[]');}
+function DB_setCalls(c){localStorage.setItem('morcego_calls',JSON.stringify(c));}
+
+function renderChamados(){
+  const calls=DB_getCalls();
+  const list=document.getElementById('callList');
+  const pending=calls.filter(c=>c.status==='pending');
+  if(!calls.length){
+    list.innerHTML='<div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">Nenhum chamado ainda.</div>';
+    return;
+  }
+  const typeLabel={waiter:'🙋 Garçom',account:'💳 Conta'};
+  list.innerHTML=calls.slice().reverse().map(c=>{
+    const t=new Date(c.timestamp);
+    const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
+    const resolved=c.status==='resolved';
+    return `<div class="call-card" style="${resolved?'opacity:.5':''}">
+      <div class="call-type">${c.type==='waiter'?'🙋':'💳'}</div>
+      <div class="call-info">
+        <div class="call-mesa">Mesa ${c.table}</div>
+        <div class="call-label">${typeLabel[c.type]||c.type}</div>
+      </div>
+      <div class="call-time">${timeStr}</div>
+      ${!resolved?`<button class="btn btn-outline btn-sm" onclick="resolveCall('${c.id}')">✓ Resolver</button>`:'<span style="font-size:.65rem;color:var(--green);font-family:\'DM Mono\',monospace">Resolvido</span>'}
+    </div>`;
+  }).join('');
+  // Update badge on tab if pending calls
+  const tab=document.querySelector('[data-page="chamados"]');
+  if(tab) tab.style.color=pending.length>0?'var(--red)':'';
+}
+
+function resolveCall(id){
+  const calls=DB_getCalls();
+  const c=calls.find(x=>x.id===id);
+  if(c) c.status='resolved';
+  DB_setCalls(calls);
+  renderChamados();
+  toast('✓ Chamado resolvido');
+}
+
+function clearCalls(){
+  if(!confirm('Limpar todos os chamados?')) return;
+  DB_setCalls([]);
+  renderChamados();
+  toast('🗑 Chamados limpos');
+}
+
+// ══ FINANCEIRO ══
+function calcTotal(order){
+  return order.items.reduce((s,i)=>{
+    const v=parseFloat((i.price||'').replace(/[^0-9,]/g,'').replace(',','.'));
+    return s+(isNaN(v)?0:v*i.qty);
+  },0);
+}
+
+function renderFinanceiro(){
+  const orders=DB.getOrders().filter(o=>['delivered','closed'].includes(o.status));
+  const now=new Date();
+  const todayStr=now.toDateString();
+  const weekAgo=new Date(now-7*864e5);
+  const monthAgo=new Date(now-30*864e5);
+
+  const todayOrders=orders.filter(o=>new Date(o.timestamp).toDateString()===todayStr);
+  const weekOrders=orders.filter(o=>new Date(o.timestamp)>=weekAgo);
+  const monthOrders=orders.filter(o=>new Date(o.timestamp)>=monthAgo);
+
+  const sum=arr=>arr.reduce((s,o)=>s+calcTotal(o),0);
+  const fmt=v=>'R$ '+v.toFixed(2).replace('.',',');
+
+  document.getElementById('finCards').innerHTML=`
+    <div class="fin-card"><div class="fin-value">${fmt(sum(todayOrders))}</div><div class="fin-label">Hoje (${todayOrders.length} pedidos)</div></div>
+    <div class="fin-card"><div class="fin-value">${fmt(sum(weekOrders))}</div><div class="fin-label">7 dias (${weekOrders.length} pedidos)</div></div>
+    <div class="fin-card"><div class="fin-value">${fmt(sum(monthOrders))}</div><div class="fin-label">30 dias (${monthOrders.length} pedidos)</div></div>`;
+
+  // Best sellers
+  const itemCount={};
+  orders.forEach(o=>o.items.forEach(i=>{
+    itemCount[i.name]=(itemCount[i.name]||0)+i.qty;
+  }));
+  const sorted=Object.entries(itemCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('sellerList').innerHTML=sorted.length?sorted.map(([name,qty],i)=>`
+    <div class="seller-row">
+      <div class="seller-rank">${i+1}°</div>
+      <div class="seller-name">${name}</div>
+      <div class="seller-qty">${qty}x vendido</div>
+    </div>`).join(''):'<div style="color:var(--dim);font-size:.82rem;padding:.5rem">Sem dados ainda.</div>';
+
+  // Status breakdown
+  const allOrders=DB.getOrders();
+  const byStatus={};
+  allOrders.forEach(o=>{byStatus[o.status]=(byStatus[o.status]||0)+1;});
+  const stLabels={new:'Novos',preparing:'Preparando',ready:'Prontos',delivered:'Entregues',closed:'Fechados',cancelled:'Cancelados',pending:'Novos'};
+  document.getElementById('statusBreakdown').innerHTML=Object.entries(byStatus).map(([s,n])=>`
+    <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--bord);font-size:.82rem">
+      <span>${stLabels[s]||s}</span><span style="color:var(--gold);font-family:'DM Mono',monospace">${n}</span>
+    </div>`).join('')||'<div style="color:var(--dim);font-size:.82rem">Sem pedidos.</div>';
 }
 
 // ══ AVALIAÇÕES ══
@@ -940,12 +1129,29 @@ function exportData(){
 // ══ INIT ══
 function initApp(){
   initDashboard();
-  // Poll for new orders every 8s when on pedidos tab
   clearInterval(orderPollInterval);
+  let lastOrderCount=DB.getOrders().length;
+  let lastCallCount=DB_getCalls().length;
   orderPollInterval=setInterval(()=>{
     updateStats();
+    const orders=DB.getOrders();
+    const calls=DB_getCalls();
+    // Detect new orders
+    if(orders.length>lastOrderCount){
+      const newOnes=orders.slice(lastOrderCount);
+      newOnes.forEach(o=>{if(!seenOrderIds.has(o.id)){playSound();}});
+      lastOrderCount=orders.length;
+    }
+    // Detect new calls
+    if(calls.length>lastCallCount){
+      playSound(); lastCallCount=calls.length;
+      // highlight tab
+      const tab=document.querySelector('[data-page="chamados"]');
+      if(tab) tab.style.color='var(--red)';
+    }
     if(currentPage==='pedidos') renderPedidos();
-  },8000);
+    if(currentPage==='chamados') renderChamados();
+  },5000);
 }
 </script>
 </body>
