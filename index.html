@@ -110,6 +110,15 @@ body::before{
 .hero-cta:active{transform:scale(.96)}
 @keyframes heroPulse{0%,100%{box-shadow:0 0 30px rgba(201,162,39,.4)}50%{box-shadow:0 0 55px rgba(201,162,39,.75)}}
 .hero-hint{font-size:.65rem;color:var(--dim);margin-top:1rem;letter-spacing:.1em;opacity:.6}
+.hero-title{margin-bottom:.5rem}
+
+/* ═══ HEADER INFO STRIP ═══ */
+.header-info{
+  font-size:.55rem;color:var(--dim);letter-spacing:.07em;
+  text-align:center;padding:.18rem 1rem .28rem;
+  border-bottom:1px solid var(--bord);
+  font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 .hero-address{font-size:.65rem;color:var(--dim);letter-spacing:.06em;margin-top:.4rem;margin-bottom:1.5rem;text-align:center;opacity:.75}
 .dot.closed{background:#e53e3e!important;box-shadow:0 0 6px #e53e3e!important}
 .status-txt.closed{color:#e53e3e!important}
@@ -413,84 +422,6 @@ body::before{
 
 <!-- ════ HERO ════ -->
 <div id="hero">
-  <div class="hero-bat-wrap">
-    <!-- Morcego SVG v5: asas se originam na altura da cabeça, trailing edge desce como capa -->
-    <svg viewBox="-165 -88 330 158" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="hglow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <filter id="eglow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <radialGradient id="ng" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1a1f4b"/><stop offset="100%" stop-color="#080609"/></radialGradient>
-        <linearGradient id="wg" x1="0%" y1="0%" x2="10%" y2="100%">
-          <stop offset="0%" stop-color="#f5edce"/>
-          <stop offset="45%" stop-color="#c8a84a"/>
-          <stop offset="100%" stop-color="#6a4a10"/>
-        </linearGradient>
-      </defs>
-
-      <!-- Sonar rings ao redor do terceiro olho -->
-      <circle class="sr"     cx="0" cy="24" r="28" stroke="#c9a227" stroke-width="1"   fill="none"/>
-      <circle class="sr sr2" cx="0" cy="24" r="28" stroke="#c9a227" stroke-width=".6"  fill="none"/>
-      <circle class="sr sr3" cx="0" cy="24" r="28" stroke="#c9a227" stroke-width=".35" fill="none"/>
-
-      <!-- SILHUETA MORCEGO v8: cabeça pequena, asas dominam — proporção real de morcego -->
-      <path d="
-        M 0,-54
-        L 10,-74 L 17,-50
-        C 17,-44 17,-38 15,-28
-        C 28,-26 50,-30 75,-36
-        C 100,-40 128,-32 150,-16
-        C 155,-6 152,8 140,20
-        C 120,32 90,34 62,28
-        C 42,22 24,14 15,4
-        C 12,10 10,20 8,34
-        L 0,42
-        L -8,34
-        C -10,20 -12,10 -15,4
-        C -24,14 -42,22 -62,28
-        C -90,34 -120,32 -140,20
-        C -152,8 -155,-6 -150,-16
-        C -128,-32 -100,-40 -75,-36
-        C -50,-30 -28,-26 -15,-28
-        C -17,-38 -17,-44 -17,-50
-        L -10,-74 L 0,-54 Z
-      " fill="url(#wg)" filter="url(#hglow)"/>
-
-      <!-- Interior das orelhas -->
-      <polygon points="1,-56 10,-70 15,-52" fill="rgba(201,162,39,.35)"/>
-      <polygon points="-1,-56 -10,-70 -15,-52" fill="rgba(201,162,39,.35)"/>
-
-      <!-- Nervuras das asas -->
-      <line x1="15" y1="-26" x2="145" y2="-14" stroke="#5a3c0a" stroke-width=".9" opacity=".55"/>
-      <line x1="15" y1="-22" x2="120"  y2="26" stroke="#5a3c0a" stroke-width=".7" opacity=".42"/>
-      <line x1="15" y1="-28" x2="72"  y2="-36" stroke="#5a3c0a" stroke-width=".6" opacity=".38"/>
-      <line x1="-15" y1="-26" x2="-145" y2="-14" stroke="#5a3c0a" stroke-width=".9" opacity=".55"/>
-      <line x1="-15" y1="-22" x2="-120"  y2="26" stroke="#5a3c0a" stroke-width=".7" opacity=".42"/>
-      <line x1="-15" y1="-28" x2="-72"  y2="-36" stroke="#5a3c0a" stroke-width=".6" opacity=".38"/>
-
-      <!-- OLHOS VERMELHOS (cabeça pequena, y≈-40) -->
-      <circle cx="-7"  cy="-38" r="4.5" fill="#cc2211" filter="url(#hglow)"/>
-      <circle cx=" 7"  cy="-38" r="4.5" fill="#cc2211" filter="url(#hglow)"/>
-      <circle cx="-7"  cy="-38" r="2.2" fill="#1a0500"/>
-      <circle cx=" 7"  cy="-38" r="2.2" fill="#1a0500"/>
-      <circle cx="-6"  cy="-40" r=".9" fill="rgba(255,90,60,.9)"/>
-      <circle cx=" 8"  cy="-40" r=".9" fill="rgba(255,90,60,.9)"/>
-
-      <!-- PRESAS -->
-      <line x1="-4" y1="-22" x2="-4.5" y2="-14" stroke="#f5edce" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-      <line x1=" 4" y1="-22" x2=" 4.5" y2="-14" stroke="#f5edce" stroke-width="2" stroke-linecap="round" opacity=".85"/>
-
-      <!-- TERCEIRO OLHO no torso -->
-      <circle cx="0" cy="8" r="20" fill="rgba(26,31,75,.55)" filter="url(#eglow)"/>
-      <circle cx="0" cy="8" r="14" stroke="#c9a227" stroke-width="2.5" fill="url(#ng)" filter="url(#hglow)"/>
-      <ellipse class="eye-iris" cx="0" cy="8" rx="8.5" ry="9.5" fill="#1a1f4b"/>
-      <ellipse cx="0" cy="8" rx="4" ry="4.5" fill="#060412"/>
-      <circle cx="2.5" cy="4.5" r="1.8" fill="#c9a227" opacity=".9"/>
-      <line x1="0" y1="-7"  x2="0" y2="-5"  stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
-      <line x1="0" y1="23"  x2="0" y2="21"  stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
-      <line x1="-15" y1="8" x2="-12.5" y2="8" stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
-      <line x1=" 15" y1="8" x2=" 12.5" y2="8" stroke="#c9a227" stroke-width="1.8" opacity=".8"/>
-    </svg>
-  </div>
   <h1 class="hero-title">MORCEGO</h1>
   <p class="hero-sub">Lanchonete · Santo André · SP</p>
   <p class="hero-address">📍 R. Siqueira Campos, 1039 — Centro, Santo André &nbsp;·&nbsp; QUI–SAB 18h/01h &nbsp;·&nbsp; DOM 17h/22h</p>
@@ -534,6 +465,7 @@ body::before{
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
     </div>
+    <div class="header-info">📍 R. Siqueira Campos, 1039 — Centro, Santo André &nbsp;·&nbsp; QUI–SAB 18h/01h &nbsp;·&nbsp; DOM 17h/22h</div>
     <div class="search-bar" id="searchBar">
       <input class="search-input" type="text" placeholder="Buscar no cardápio..." id="searchMobile">
     </div>
@@ -885,7 +817,7 @@ const categories = [
 
 // ══ FLOATING PARTICLES (anti-gravity — drift upward) ══
 (function(){
-  const SYMBOLS = ['🦇','🍹','🥂','🍸','🍺','🦇','🦇'];
+  const SYMBOLS = ['🦇'];
   const container = document.getElementById('floatParticles');
   let active = 0;
   const MAX = window.innerWidth < 600 ? 6 : 10;
@@ -1080,45 +1012,6 @@ modal.addEventListener('touchend',e=>{
   if(dy>80&&modal.scrollTop===0) closeModal();
 },{passive:true});
 
-// ══ TAP BATS ══
-function spawnBat(x,y){
-  const container=document.getElementById('tapBats');
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('viewBox','-32 -24 64 40');
-  const s=26+Math.random()*16;
-  svg.style.cssText=`position:absolute;left:${x-s/2}px;top:${y-s/2}px;width:${s}px;height:${s}px;pointer-events:none;opacity:.92;`;
-  svg.innerHTML=`
-    <path d="M-3,-3 C-11,-12 -24,-14 -30,-9 C-24,-2 -14,3 -5,5 C-3,6 -3,3 -3,0Z" fill="#c9a227"/>
-    <path d="M3,-3 C11,-12 24,-14 30,-9 C24,-2 14,3 5,5 C3,6 3,3 3,0Z" fill="#c9a227"/>
-    <ellipse cx="0" cy="-1" rx="4.5" ry="7" fill="#c9a227"/>
-    <path d="M-2,-8 L-5,-19 L1,-9Z" fill="#c9a227"/>
-    <path d="M2,-8 L5,-19 L-1,-9Z" fill="#c9a227"/>
-    <circle cx="-1.8" cy="-4" r="1.4" fill="#cc2211"/>
-    <circle cx="1.8" cy="-4" r="1.4" fill="#cc2211"/>
-    <line x1="-1" y1="2" x2="-1.5" y2="5" stroke="#c9a227" stroke-width="1.2" stroke-linecap="round" opacity=".8"/>
-    <line x1="1" y1="2" x2="1.5" y2="5" stroke="#c9a227" stroke-width="1.2" stroke-linecap="round" opacity=".8"/>
-  `;
-  container.appendChild(svg);
-  const angle=Math.random()*Math.PI*2;
-  const dist=60+Math.random()*80;
-  const dx=Math.cos(angle)*dist, dy=Math.sin(angle)*dist;
-  requestAnimationFrame(()=>{
-    svg.style.transition='transform .7s ease-out,opacity .7s ease-out';
-    svg.style.transform=`translate(${dx}px,${dy}px) scale(.2) rotate(${Math.random()*360}deg)`;
-    svg.style.opacity='0';
-  });
-  setTimeout(()=>svg.remove(),750);
-}
-document.addEventListener('touchend',e=>{
-  if(e.target.closest('#hero')||e.target.closest('.modal-overlay')||e.target.closest('.header')||e.target.closest('.bottom-nav')) return;
-  const t=e.changedTouches[0];
-  spawnBat(t.clientX,t.clientY);
-  if(Math.random()>.4) setTimeout(()=>spawnBat(t.clientX+(Math.random()-.5)*30,t.clientY+(Math.random()-.5)*30),120);
-},{passive:true});
-document.addEventListener('click',e=>{
-  if(e.target.closest('#hero')||e.target.closest('.modal-overlay')||e.target.closest('.header')||e.target.closest('.search-input')||e.target.closest('.card-btn')) return;
-  spawnBat(e.clientX,e.clientY);
-},{passive:true});
 
 // ══ ACTIVE NAV ON SCROLL ══
 function updateNav(){
