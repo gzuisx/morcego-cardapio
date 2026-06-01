@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Morcego — Cozinha</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
 <style>
 :root{
   --bg:#07060a;--bg2:#0f0d14;--bg3:#16131c;--card:#1a1724;
@@ -132,8 +134,21 @@ body{background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif;mi
 <div id="toast"></div>
 
 <script>
-function getOrders(){return JSON.parse(localStorage.getItem('morcego_orders')||'[]');}
-function setOrders(o){localStorage.setItem('morcego_orders',JSON.stringify(o));}
+let _orders=[];
+async function loadOrders(){
+  try{ _orders=await sbGetOrders(); } catch(e){
+    _orders=JSON.parse(localStorage.getItem('morcego_orders')||'[]');
+  }
+}
+function getOrders(){return _orders;}
+async function setOrderStatus(id,status){
+  try{ await sbUpdateOrder(id,status); } catch(e){
+    const orders=JSON.parse(localStorage.getItem('morcego_orders')||'[]');
+    const o=orders.find(x=>x.id===id); if(o){o.status=status;}
+    localStorage.setItem('morcego_orders',JSON.stringify(orders));
+  }
+  const o=_orders.find(x=>x.id===id); if(o) o.status=status;
+}
 let seenIds=new Set(JSON.parse(localStorage.getItem('morcego_cozinha_seen')||'[]'));
 function markSeen(id){seenIds.add(id);localStorage.setItem('morcego_cozinha_seen',JSON.stringify([...seenIds]));}
 
@@ -146,12 +161,9 @@ function elapsed(ts){
   return{txt:m+'min',cls:'late'};
 }
 
-function updateOrder(id,status){
-  const orders=getOrders();
-  const o=orders.find(x=>x.id===id);
-  if(o){o.status=status;setOrders(orders);}
-  markSeen(id);
-  render();
+async function updateOrder(id,status){
+  await setOrderStatus(id,status);
+  markSeen(id); render();
   toast(status==='preparing'?'🟠 Preparando':status==='ready'?'🟢 Pronto':'Atualizado');
 }
 
@@ -202,25 +214,6 @@ function toast(msg){
   setTimeout(()=>el.classList.remove('show'),2000);
 }
 
-// Auto-refresh a cada 5s
-let countdown=5;
-setInterval(()=>{
-  countdown--;
-  document.getElementById('refreshTxt').textContent=`Atualiza em ${countdown}s`;
-  if(countdown<=0){render();countdown=5;}
-},1000);
-
-// Detectar novos pedidos e tocar som
-let lastCount=getOrders().length;
-setInterval(()=>{
-  const o=getOrders();
-  if(o.length>lastCount){
-    const news=o.slice(lastCount).filter(x=>x.status==='new'||x.status==='pending');
-    if(news.length) playSound();
-    lastCount=o.length;
-  }
-},5000);
-
 function playSound(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -234,7 +227,28 @@ function playSound(){
   }catch(e){}
 }
 
-render();
+// Realtime Supabase
+sbOnNewOrder((newOrder, updateEvent)=>{
+  if(newOrder && !updateEvent){
+    if(!seenIds.has(newOrder.id)) playSound();
+    _orders.unshift(newOrder);
+  } else if(updateEvent){
+    const o=_orders.find(x=>x.id===updateEvent.id);
+    if(o) o.status=updateEvent.status;
+  }
+  render();
+});
+
+// Countdown UI + fallback refresh
+let countdown=30;
+setInterval(async()=>{
+  countdown--;
+  document.getElementById('refreshTxt').textContent=`Atualiza em ${countdown}s`;
+  if(countdown<=0){ await loadOrders(); render(); countdown=30; }
+},1000);
+
+// Init
+loadOrders().then(render);
 </script>
 </body>
 </html>

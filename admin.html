@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Morcego — Painel do Dono</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
 <style>
 :root{
   --bg:#09080c;--bg2:#110f18;--bg3:#18151f;--card:#1d1a26;--card-h:#252232;
@@ -871,7 +873,16 @@ function saveProduct(){
 // ══ PEDIDOS ══
 let orderPollInterval=null;
 
-// ══ SEEN ORDERS (para detectar novos) ══
+// ══ CACHE LOCAL (atualizado pelo Supabase realtime) ══
+let _cachedOrders=[];
+let _cachedCalls=[];
+let _cachedReactions={};
+
+async function refreshOrders(){ _cachedOrders=await sbGetOrders().catch(()=>DB.getOrders()); }
+async function refreshCalls(){ _cachedCalls=await sbGetCalls().catch(()=>DB_getCalls()); }
+async function refreshReactions(){ _cachedReactions=await sbGetReactions().catch(()=>DB.getReactions()); }
+
+// ══ SEEN ORDERS ══
 let seenOrderIds=new Set(JSON.parse(localStorage.getItem('morcego_seen_orders')||'[]'));
 function markSeen(id){seenOrderIds.add(id);localStorage.setItem('morcego_seen_orders',JSON.stringify([...seenOrderIds]));}
 
@@ -884,7 +895,7 @@ function setOrderFilter(f){
 
 function renderPedidos(){
   updateStats();
-  const orders=DB.getOrders();
+  const orders=_cachedOrders.length?_cachedOrders:DB.getOrders();
   // History filter
   const histFilter=document.getElementById('histFilter')?.value||'active';
   let filtered;
@@ -932,12 +943,13 @@ function renderPedidos(){
   }).join('');
 }
 
-function updateOrder(id,status){
-  const orders=DB.getOrders();
-  const o=orders.find(x=>x.id===id);
-  if(o){o.status=status;DB.setOrders(orders);}
-  markSeen(id);
-  renderPedidos();updateStats();
+async function updateOrder(id,status){
+  try{ await sbUpdateOrder(id,status); } catch(e){
+    const orders=DB.getOrders(); const o=orders.find(x=>x.id===id);
+    if(o){o.status=status;DB.setOrders(orders);}
+  }
+  const o=_cachedOrders.find(x=>x.id===id); if(o) o.status=status;
+  markSeen(id); renderPedidos(); updateStats();
   const labels={preparing:'🟠 Preparando',ready:'🟢 Pronto',delivered:'🔵 Entregue',closed:'✅ Fechado',cancelled:'Cancelado'};
   toast(labels[status]||'Atualizado');
 }
@@ -961,7 +973,7 @@ function DB_getCalls(){return JSON.parse(localStorage.getItem('morcego_calls')||
 function DB_setCalls(c){localStorage.setItem('morcego_calls',JSON.stringify(c));}
 
 function renderChamados(){
-  const calls=DB_getCalls();
+  const calls=_cachedCalls.length?_cachedCalls:DB_getCalls();
   const list=document.getElementById('callList');
   const pending=calls.filter(c=>c.status==='pending');
   if(!calls.length){
@@ -988,13 +1000,13 @@ function renderChamados(){
   if(tab) tab.style.color=pending.length>0?'var(--red)':'';
 }
 
-function resolveCall(id){
-  const calls=DB_getCalls();
-  const c=calls.find(x=>x.id===id);
-  if(c) c.status='resolved';
-  DB_setCalls(calls);
-  renderChamados();
-  toast('✓ Chamado resolvido');
+async function resolveCall(id){
+  try{ await sbResolveCall(id); } catch(e){
+    const calls=DB_getCalls(); const c=calls.find(x=>x.id===id);
+    if(c) c.status='resolved'; DB_setCalls(calls);
+  }
+  const c=_cachedCalls.find(x=>x.id===id); if(c) c.status='resolved';
+  renderChamados(); toast('✓ Chamado resolvido');
 }
 
 function clearCalls(){
@@ -1057,7 +1069,7 @@ function renderFinanceiro(){
 
 // ══ AVALIAÇÕES ══
 function renderAvaliacoes(){
-  const reactions=DB.getReactions();
+  const reactions=Object.keys(_cachedReactions).length?_cachedReactions:DB.getReactions();
   const sort=document.getElementById('reactSort').value;
   const entries=Object.entries(reactions).map(([id,r])=>({id,...r,total:(r.fire||0)+(r.heart||0)+(r.meh||0)}));
   entries.sort((a,b)=>((b[sort]||b.fire||0)-(a[sort]||a.fire||0)));
@@ -1127,31 +1139,43 @@ function exportData(){
 }
 
 // ══ INIT ══
-function initApp(){
+async function initApp(){
   initDashboard();
-  clearInterval(orderPollInterval);
-  let lastOrderCount=DB.getOrders().length;
-  let lastCallCount=DB_getCalls().length;
-  orderPollInterval=setInterval(()=>{
+  // Carregar dados iniciais do Supabase
+  await Promise.all([refreshOrders(), refreshCalls(), refreshReactions()]);
+
+  // Realtime — novos pedidos
+  sbOnNewOrder((newOrder, updateEvent)=>{
+    if(newOrder && !updateEvent){
+      if(!seenOrderIds.has(newOrder.id)){ playSound(); }
+      _cachedOrders.unshift(newOrder);
+    } else if(updateEvent){
+      const o=_cachedOrders.find(x=>x.id===updateEvent.id);
+      if(o) o.status=updateEvent.status;
+    }
     updateStats();
-    const orders=DB.getOrders();
-    const calls=DB_getCalls();
-    // Detect new orders
-    if(orders.length>lastOrderCount){
-      const newOnes=orders.slice(lastOrderCount);
-      newOnes.forEach(o=>{if(!seenOrderIds.has(o.id)){playSound();}});
-      lastOrderCount=orders.length;
-    }
-    // Detect new calls
-    if(calls.length>lastCallCount){
-      playSound(); lastCallCount=calls.length;
-      // highlight tab
-      const tab=document.querySelector('[data-page="chamados"]');
-      if(tab) tab.style.color='var(--red)';
-    }
+    if(currentPage==='pedidos') renderPedidos();
+  });
+
+  // Realtime — novos chamados
+  sbOnNewCall((newCall)=>{
+    playSound();
+    _cachedCalls.unshift(newCall);
+    const tab=document.querySelector('[data-page="chamados"]');
+    if(tab) tab.style.color='var(--red)';
+    if(currentPage==='chamados') renderChamados();
+  });
+
+  // Fallback poll (caso realtime falhe)
+  clearInterval(orderPollInterval);
+  orderPollInterval=setInterval(async()=>{
+    await refreshOrders();
+    await refreshCalls();
+    updateStats();
     if(currentPage==='pedidos') renderPedidos();
     if(currentPage==='chamados') renderChamados();
-  },5000);
+    if(currentPage==='financeiro') renderFinanceiro();
+  },30000); // poll lento — realtime cuida do resto
 }
 </script>
 </body>

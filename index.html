@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Creepster&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="db.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#080609">
 <meta name="mobile-web-app-capable" content="yes">
@@ -827,10 +829,12 @@ function callConta(){
   _saveCall('account');
   _showCallToast('💳 Conta solicitada! Aguarde.');
 }
-function _saveCall(type){
-  const calls=JSON.parse(localStorage.getItem('morcego_calls')||'[]');
-  calls.push({id:Date.now().toString(),table:currentMesa,type,status:'pending',timestamp:new Date().toISOString()});
-  localStorage.setItem('morcego_calls',JSON.stringify(calls));
+async function _saveCall(type){
+  const call={id:Date.now().toString(),table:currentMesa,type,status:'pending',timestamp:new Date().toISOString()};
+  try{ await sbInsertCall(call); } catch(e){
+    const calls=JSON.parse(localStorage.getItem('morcego_calls')||'[]');
+    calls.push(call); localStorage.setItem('morcego_calls',JSON.stringify(calls));
+  }
 }
 function _showCallToast(msg){
   const el=document.createElement('div');
@@ -909,21 +913,21 @@ function cartQty(i,delta){
   if(cart[i].qty<=0) cart.splice(i,1);
   updateCartBtn(); renderCart();
 }
-function sendOrder(){
+async function sendOrder(){
   if(!cart.length) return;
   const order={
     id:Date.now().toString(),
     table:currentMesa,
     items:cart.map(c=>({name:c.name,price:c.price,qty:c.qty})),
     timestamp:new Date().toISOString(),
-    status:'pending'
+    status:'new'
   };
-  const orders=JSON.parse(localStorage.getItem('morcego_orders')||'[]');
-  orders.push(order);
-  localStorage.setItem('morcego_orders',JSON.stringify(orders));
-  cart=[];
-  closeCart();
-  updateCartBtn();
+  try{ await sbInsertOrder(order); } catch(e){
+    // fallback localStorage
+    const orders=JSON.parse(localStorage.getItem('morcego_orders')||'[]');
+    orders.push(order); localStorage.setItem('morcego_orders',JSON.stringify(orders));
+  }
+  cart=[]; closeCart(); updateCartBtn();
   document.getElementById('orderSentMesa').textContent=currentMesa;
   document.getElementById('orderSent').classList.add('show');
 }
@@ -1510,13 +1514,18 @@ function openModal(item,cat){
   });
 }
 
-function doReact(catId,name,emoji,btn){
+async function doReact(catId,name,emoji,btn){
   if(btn.classList.contains('voted')) return;
-  // unvote others
   btn.closest('.reactions-row').querySelectorAll('.react-btn').forEach(b=>b.classList.remove('voted'));
   btn.classList.add('voted');
-  const r=saveReaction(catId,name,emoji);
-  btn.querySelector('.react-count').textContent=r[emoji];
+  const id=itemId(catId,name);
+  try{
+    const r=await sbSaveReaction(id,emoji);
+    btn.querySelector('.react-count').textContent=r[emoji];
+  } catch(e){
+    const r=saveReaction(catId,name,emoji);
+    btn.querySelector('.react-count').textContent=r[emoji];
+  }
 }
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
