@@ -91,6 +91,23 @@ async function sbSaveSettings(s){
   });
 }
 
+// ══ AUTH ══
+async function sbSignIn(email, password){
+  const {data,error} = await getSB().auth.signInWithPassword({email,password});
+  return {ok:!error, error:error?.message, user:data?.user};
+}
+async function sbSignOut(){
+  await getSB().auth.signOut();
+}
+async function sbGetSession(){
+  const {data} = await getSB().auth.getSession();
+  return data?.session||null;
+}
+async function sbGetUser(){
+  const {data} = await getSB().auth.getUser();
+  return data?.user||null;
+}
+
 // ══ RESTAURANT / CATEGORIES / PRODUCTS ══
 let _restaurantId = null;
 

@@ -99,10 +99,29 @@ body{background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif;mi
   padding:.6rem 1.2rem;font-size:.82rem;transition:transform .3s;z-index:999;
 }
 #toast.show{transform:translateX(-50%) translateY(0)}
+
+/* LOGIN */
+#loginWrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:9999;gap:1.2rem;padding:2rem}
+#loginWrap .logo{font-family:'Jost',sans-serif;font-weight:900;font-size:3rem;letter-spacing:.15em;color:#fff;-webkit-text-stroke:2px var(--gold);paint-order:stroke fill}
+#loginWrap .sub{font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace}
+#loginWrap input{width:100%;max-width:320px;background:var(--bg3);border:1px solid var(--bord);border-radius:8px;padding:.75rem 1rem;color:var(--cream);font-size:.95rem;outline:none}
+#loginWrap input:focus{border-color:var(--gold)}
+#loginWrap .err{font-size:.75rem;color:var(--red);min-height:1rem}
+#mainApp{display:none}
 </style>
 </head>
 <body>
 
+<div id="loginWrap">
+  <div class="logo">MOCERGO</div>
+  <div class="sub">🍳 Cozinha</div>
+  <input type="email" id="emailInput" placeholder="Email" autocomplete="username">
+  <input type="password" id="pwInput" placeholder="Senha" autocomplete="current-password">
+  <button class="btn btn-gold" onclick="doLogin()" id="loginBtn" style="max-width:320px;width:100%;justify-content:center;padding:.75rem">Entrar</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<div id="mainApp">
 <div class="topbar">
   <div>
     <div class="topbar-logo">MOCERGO</div>
@@ -134,10 +153,34 @@ body{background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif;mi
     </div>
   </div>
 </div>
+</div><!-- /mainApp -->
 
 <div id="toast"></div>
 
 <script>
+// ══ AUTH ══
+let _started=false;
+function enterApp(){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  if(!_started){ _started=true; startKitchen(); }
+}
+async function doLogin(){
+  const email=document.getElementById('emailInput').value.trim();
+  const pw=document.getElementById('pwInput').value;
+  const errEl=document.getElementById('loginErr');
+  const btn=document.getElementById('loginBtn');
+  if(!email||!pw){errEl.textContent='Preencha email e senha.';return;}
+  btn.textContent='Entrando...';btn.disabled=true;
+  const res=await sbSignIn(email,pw);
+  btn.textContent='Entrar';btn.disabled=false;
+  if(res.ok) enterApp();
+  else{errEl.textContent='Email ou senha incorretos.';setTimeout(()=>errEl.textContent='',2500);}
+}
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('emailInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+(async()=>{ const s=await sbGetSession(); if(s) enterApp(); })();
+
 let _orders=[];
 async function loadOrders(){
   try{ _orders=await sbGetOrders(); } catch(e){
@@ -234,28 +277,29 @@ function playSound(){
   }catch(e){}
 }
 
-// Realtime Supabase
-sbOnNewOrder((newOrder, updateEvent)=>{
-  if(newOrder && !updateEvent){
-    if(!seenIds.has(newOrder.id)) playSound();
-    _orders.unshift(newOrder);
-  } else if(updateEvent){
-    const o=_orders.find(x=>x.id===updateEvent.id);
-    if(o) o.status=updateEvent.status;
-  }
-  render();
-});
-
-// Countdown UI + fallback refresh
-let countdown=30;
-setInterval(async()=>{
-  countdown--;
-  document.getElementById('refreshTxt').textContent=`Atualiza em ${countdown}s`;
-  if(countdown<=0){ await loadOrders(); render(); countdown=30; }
-},1000);
-
-// Init
-loadOrders().then(render);
+// ══ START (após login) ══
+function startKitchen(){
+  // Realtime Supabase
+  sbOnNewOrder((newOrder, updateEvent)=>{
+    if(newOrder && !updateEvent){
+      if(!seenIds.has(newOrder.id)) playSound();
+      _orders.unshift(newOrder);
+    } else if(updateEvent){
+      const o=_orders.find(x=>x.id===updateEvent.id);
+      if(o) o.status=updateEvent.status;
+    }
+    render();
+  });
+  // Countdown UI + fallback refresh
+  let countdown=30;
+  setInterval(async()=>{
+    countdown--;
+    document.getElementById('refreshTxt').textContent=`Atualiza em ${countdown}s`;
+    if(countdown<=0){ await loadOrders(); render(); countdown=30; }
+  },1000);
+  // Init
+  loadOrders().then(render);
+}
 </script>
 </body>
 </html>

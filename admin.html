@@ -228,11 +228,11 @@ textarea{resize:vertical;min-height:60px}
   <div class="login-logo">MOCERGO</div>
   <div class="login-sub">Painel do Dono</div>
   <div class="login-box">
-    <input type="password" id="pwInput" placeholder="Senha de acesso" autocomplete="current-password">
-    <button class="btn btn-gold" onclick="doLogin()">Entrar</button>
+    <input type="email" id="emailInput" placeholder="Email" autocomplete="username" style="text-align:left;letter-spacing:0">
+    <input type="password" id="pwInput" placeholder="Senha" autocomplete="current-password" style="text-align:left;letter-spacing:0">
+    <button class="btn btn-gold" onclick="doLogin()" id="loginBtn">Entrar</button>
     <div class="login-err" id="loginErr"></div>
   </div>
-  <div style="font-size:.6rem;color:var(--dim);font-family:'DM Mono',monospace;margin-top:.5rem">senha padrão: morcego2024</div>
 </div>
 
 <!-- ════ APP ════ -->
@@ -533,33 +533,49 @@ function itemId(catId,name){
   return catId+'_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').slice(0,30);
 }
 
-// ══ AUTH ══
-const DEFAULT_PW = 'morcego2024';
+// ══ AUTH (Supabase) ══
 let loggedIn = false;
 
-function getPassword(){ return DB.getSettings().adminPassword||DEFAULT_PW; }
+function enterApp(){
+  loggedIn=true;
+  document.getElementById('loginWrap').style.display='none';
+  const app=document.getElementById('app');
+  app.style.display='flex'; app.style.flexDirection='column';
+  initApp();
+}
 
-function doLogin(){
-  const pw = document.getElementById('pwInput').value;
-  if(pw===getPassword()){
-    loggedIn=true;
-    document.getElementById('loginWrap').style.display='none';
-    document.getElementById('app').style.display='flex';
-    document.getElementById('app').style.flexDirection='column';
-    initApp();
+async function doLogin(){
+  const email=document.getElementById('emailInput').value.trim();
+  const pw=document.getElementById('pwInput').value;
+  const errEl=document.getElementById('loginErr');
+  const btn=document.getElementById('loginBtn');
+  if(!email||!pw){ errEl.textContent='Preencha email e senha.'; return; }
+  btn.textContent='Entrando...'; btn.disabled=true;
+  const res=await sbSignIn(email,pw);
+  btn.textContent='Entrar'; btn.disabled=false;
+  if(res.ok){
+    enterApp();
   } else {
-    document.getElementById('loginErr').textContent='Senha incorreta.';
-    setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
+    errEl.textContent='Email ou senha incorretos.';
+    setTimeout(()=>errEl.textContent='',2500);
   }
 }
 document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('emailInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-function doLogout(){
+async function doLogout(){
+  await sbSignOut();
   loggedIn=false;
   document.getElementById('app').style.display='none';
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('pwInput').value='';
 }
+
+// Auto-login se sessão Supabase ativa
+(async()=>{
+  const session=await sbGetSession();
+  if(session) enterApp();
+})();
 
 // ══ NAVIGATION ══
 let currentPage='dashboard';
@@ -1125,13 +1141,14 @@ function copyUrl(){
   });
 }
 
-function changePassword(){
+async function changePassword(){
   const pw=document.getElementById('newPw').value;
   const pw2=document.getElementById('newPwConfirm').value;
   if(!pw){toast('⚠️ Digite a nova senha');return;}
   if(pw!==pw2){toast('⚠️ Senhas não coincidem');return;}
   if(pw.length<6){toast('⚠️ Mínimo 6 caracteres');return;}
-  const s=DB.getSettings(); s.adminPassword=pw; DB.setSettings(s);
+  const {error}=await getSB().auth.updateUser({password:pw});
+  if(error){toast('⚠️ '+error.message);return;}
   document.getElementById('newPw').value='';
   document.getElementById('newPwConfirm').value='';
   toast('✅ Senha alterada!');
