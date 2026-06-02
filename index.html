@@ -975,9 +975,51 @@ function setFilter(f,el){
 // ══ WHATSAPP NUMBER — trocar pelo número real ══
 const WPP_NUMBER = null; // sem WhatsApp por enquanto
 
-// ══ DATA ══
+// ══ DATA — convertido do Supabase, fallback hardcoded ══
 const Z  = 'https://zig-public.zig.fun/images/';
 const ZF = 'https://zig-public-files.zig.fun/images/';
+
+function sbToCategories(cats, prods){
+  return cats.map(cat=>({
+    id: cat.slug||cat.id,
+    icon: cat.icon,
+    name: cat.name,
+    wide: cat.wide,
+    items: prods
+      .filter(p=>p.category_id===cat.id)
+      .map(p=>({
+        name: p.name,
+        desc: p.description,
+        price: p.price,
+        prefix: p.price_prefix||'',
+        img: p.image_url,
+        tag: p.tags?.includes('vegano')?'vegano':null,
+        tags: p.tags||[],
+        calories: p.calories,
+        allergens: p.allergens||[],
+        available: p.available,
+        extras: p.extras||null,
+        _id: p.id
+      }))
+  })).filter(cat=>cat.items.length>0);
+}
+
+async function loadProductsFromSupabase(){
+  try{
+    const [cats, prods] = await Promise.all([
+      sbGetCategories(),
+      sbGetProducts(false)
+    ]);
+    if(cats.length && prods.length){
+      const data = sbToCategories(cats, prods);
+      // Sobrescreve o array global
+      categories.length=0;
+      data.forEach(c=>categories.push(c));
+      return true;
+    }
+  } catch(e){ console.warn('Supabase products fallback:',e); }
+  return false;
+}
 
 // extras format: [{title, type:'add'|'select', opts:[{name, price?}]}]
 const categories = [
@@ -1381,8 +1423,9 @@ function buildContent(){
     const grid=document.createElement('div');
     grid.className='grid'+(cat.wide?' grid-wide':'');
     cat.items.forEach(item=>{
-      const avail=item._customId?(_customProducts[item._customId]?.available!==false):isAvailable(cat.id,item.name);
-      const tags=getItemTags(cat.id,item.name,item);
+      // available: vem do Supabase (item.available) ou do override local
+      const avail=item.available!==false&&(item._customId?(_customProducts[item._customId]?.available!==false):isAvailable(cat.id,item.name));
+      const tags=item.tags?.length?item.tags:getItemTags(cat.id,item.name,item);
       const cal=getItemCalories(cat.id,item.name);
       const aller=getItemAllergens(cat.id,item.name);
 
@@ -1629,24 +1672,28 @@ updateStatus();
 setInterval(updateStatus, 60000);
 
 // ══ INIT ══
-buildNav();
-buildContent();
-updateNav();
-
-// Carrega settings e reactions do Supabase antes de inicializar features
 (async()=>{
-  try{
-    const [remoteSettings, remoteReactions] = await Promise.all([
-      sbGetSettings().catch(()=>null),
-      sbGetReactions().catch(()=>null)
-    ]);
-    if(remoteSettings&&Object.keys(remoteSettings).length){
-      _adminSettings.tableModeEnabled=!!remoteSettings.tableModeEnabled;
-      _adminSettings.waitTime=remoteSettings.waitTime||null;
-      _adminSettings.nightlyHighlight=remoteSettings.nightlyHighlight||{};
-    }
-    if(remoteReactions) Object.assign(_reactions,remoteReactions);
-  } catch(e){}
+  // 1. Carrega produtos + settings + reactions do Supabase em paralelo
+  const [_sbProds, remoteSettings, remoteReactions] = await Promise.allSettled([
+    loadProductsFromSupabase(),
+    sbGetSettings().catch(()=>null),
+    sbGetReactions().catch(()=>null)
+  ]);
+
+  // Aplica settings remotos
+  const rs = remoteSettings.value;
+  if(rs&&typeof rs==='object'){
+    _adminSettings.tableModeEnabled=!!rs.tableModeEnabled;
+    _adminSettings.waitTime=rs.waitTime||null;
+    _adminSettings.nightlyHighlight=rs.nightlyHighlight||{};
+  }
+  // Aplica reactions remotas
+  if(remoteReactions.value) Object.assign(_reactions, remoteReactions.value);
+
+  // 2. Renderiza com dados (Supabase ou fallback hardcoded)
+  buildNav();
+  buildContent();
+  updateNav();
   initMesaMode();
   initWaitBanner();
   initNightlyHighlight();

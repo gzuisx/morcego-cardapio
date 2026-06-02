@@ -91,6 +91,60 @@ async function sbSaveSettings(s){
   });
 }
 
+// ══ RESTAURANT / CATEGORIES / PRODUCTS ══
+let _restaurantId = null;
+
+async function sbGetRestaurantId(slug='morcego'){
+  if(_restaurantId) return _restaurantId;
+  const {data} = await getSB().from('restaurants').select('id').eq('slug',slug).single();
+  _restaurantId = data?.id || null;
+  return _restaurantId;
+}
+
+async function sbGetCategories(){
+  const rid = await sbGetRestaurantId();
+  if(!rid) return [];
+  const {data} = await getSB().from('categories')
+    .select('*').eq('restaurant_id',rid).eq('visible',true).order('sort_order');
+  return data||[];
+}
+
+async function sbGetProducts(includeUnavailable=false){
+  const rid = await sbGetRestaurantId();
+  if(!rid) return [];
+  let q = getSB().from('products').select('*').eq('restaurant_id',rid).order('sort_order');
+  if(!includeUnavailable) q = q.eq('available',true);
+  const {data} = await q;
+  return data||[];
+}
+
+async function sbUpdateProduct(id, fields){
+  const {data,error} = await getSB().from('products')
+    .update({...fields, updated_at: new Date().toISOString()}).eq('id',id).select();
+  if(error) console.error('sbUpdateProduct',error);
+  return data?.[0];
+}
+
+async function sbInsertProduct(p){
+  const rid = await sbGetRestaurantId();
+  const {data,error} = await getSB().from('products').insert({
+    restaurant_id: rid,
+    category_id: p.catId,
+    name: p.name, description: p.desc||'',
+    price: p.price||'', price_prefix: p.prefix||'',
+    image_url: p.img||'', calories: p.calories||null,
+    allergens: p.allergens||[], tags: p.tags||[],
+    available: true, extras: p.extras||null
+  }).select();
+  if(error) console.error('sbInsertProduct',error);
+  return data?.[0];
+}
+
+async function sbDeleteProduct(id){
+  const {error} = await getSB().from('products').delete().eq('id',id);
+  if(error) console.error('sbDeleteProduct',error);
+}
+
 // ══ REALTIME ══
 function sbOnNewOrder(callback){
   return getSB().channel('rt-orders')

@@ -686,55 +686,48 @@ function updateBarStatus(){
 }
 
 // ══ CARDÁPIO ══
-function getAllProducts(){
-  const overrides=DB.getProducts();
-  const custom=DB.getCustomProducts();
-  let all=[];
-  BASE_CATEGORIES.forEach(cat=>{
-    cat.items.forEach(item=>{
-      const id=itemId(cat.id,item.name);
-      const ov=overrides[id]||{};
-      if(!ov.deleted){
-        all.push({
-          id, catId:cat.id, catName:cat.name, catIcon:cat.icon,
-          name:ov.name!==undefined?ov.name:item.name,
-          desc:ov.desc!==undefined?ov.desc:(item.desc||''),
-          price:ov.price!==undefined?ov.price:(item.price||''),
-          prefix:ov.prefix!==undefined?ov.prefix:(item.prefix||''),
-          img:ov.img!==undefined?ov.img:(item.img||''),
-          tags:ov.tags||[],
-          calories:ov.calories||null,
-          allergens:ov.allergens||[],
-          available:ov.available!==false,
-          isCustom:false,
-          _ov:ov
-        });
-      }
-    });
-  });
-  Object.entries(custom).forEach(([id,p])=>{
-    if(!p.deleted){
-      all.push({id,...p,isCustom:true});
-    }
-  });
-  return all;
+// ══ PRODUTOS VIA SUPABASE ══
+let _sbCats=[];
+let _sbProds=[];
+
+async function loadAdminProducts(){
+  const [cats, prods] = await Promise.all([
+    sbGetCategories().catch(()=>[]),
+    sbGetProducts(true).catch(()=>[])
+  ]);
+  _sbCats = cats;
+  _sbProds = prods.map(p=>({
+    id: p.id,
+    catId: p.category_id,
+    catSlug: cats.find(c=>c.id===p.category_id)?.slug||'',
+    catName: cats.find(c=>c.id===p.category_id)?.name||'',
+    catIcon: cats.find(c=>c.id===p.category_id)?.icon||'',
+    name: p.name, desc: p.description, price: p.price,
+    prefix: p.price_prefix||'', img: p.image_url||'',
+    tags: p.tags||[], calories: p.calories, allergens: p.allergens||[],
+    available: p.available, extras: p.extras, isSupabase:true
+  }));
+  return _sbProds;
 }
 
-function renderCardapio(){
+async function renderCardapio(){
+  // Carrega se cache vazio
+  if(!_sbProds.length) await loadAdminProducts();
+
   const q=(document.getElementById('prodSearch').value||'').toLowerCase();
   const catF=document.getElementById('catFilter').value;
 
-  // Populate cat filter once
+  // Popula filtro de categorias
   const sel=document.getElementById('catFilter');
   if(sel.options.length<=1){
-    BASE_CATEGORIES.forEach(c=>{
+    _sbCats.forEach(c=>{
       const o=document.createElement('option');
       o.value=c.id; o.textContent=c.icon+' '+c.name;
       sel.appendChild(o);
     });
   }
 
-  const products=getAllProducts().filter(p=>{
+  const products=_sbProds.filter(p=>{
     if(catF && p.catId!==catF) return false;
     if(q && !p.name.toLowerCase().includes(q)) return false;
     return true;
@@ -771,22 +764,20 @@ function renderCardapio(){
   });
 }
 
-function toggleAvailable(id,isCustom,val){
-  if(isCustom==='true'){
-    const c=DB.getCustomProducts(); c[id]=c[id]||{}; c[id].available=val; DB.setCustomProducts(c);
-  } else {
-    const p=DB.getProducts(); p[id]=p[id]||{}; p[id].available=val; DB.setProducts(p);
-  }
+async function toggleAvailable(id,isCustom,val){
+  try{
+    await sbUpdateProduct(id,{available:val});
+    const p=_sbProds.find(x=>x.id===id); if(p) p.available=val;
+  } catch(e){ toast('⚠️ Erro ao salvar'); return; }
   toast(val?'✅ Disponível':'🚫 Esgotado');
 }
 
-function deleteProduct(id,isCustom){
+async function deleteProduct(id,isCustom){
   if(!confirm('Excluir este produto?')) return;
-  if(isCustom==='true'){
-    const c=DB.getCustomProducts(); if(c[id]){c[id].deleted=true;} DB.setCustomProducts(c);
-  } else {
-    const p=DB.getProducts(); p[id]=p[id]||{}; p[id].deleted=true; DB.setProducts(p);
-  }
+  try{
+    await sbDeleteProduct(id);
+    _sbProds=_sbProds.filter(x=>x.id!==id);
+  } catch(e){ toast('⚠️ Erro ao excluir'); return; }
   renderCardapio(); toast('🗑 Produto removido');
 }
 
@@ -798,7 +789,7 @@ const TAG_LIST=['vegano','sem-gluten','mais-pedido'];
 function openProductModal(prod){
   editingProduct=prod;
   document.getElementById('modalTitle').textContent=prod?'Editar Produto':'Novo Produto';
-  const cats=BASE_CATEGORIES.map(c=>`<option value="${c.id}" ${prod&&prod.catId===c.id?'selected':''}>${c.icon} ${c.name}</option>`).join('');
+  const cats=_sbCats.map(c=>`<option value="${c.id}" ${prod&&prod.catId===c.id?'selected':''}>${c.icon} ${c.name}</option>`).join('');
 
   const allergenChips=ALLERGEN_LIST.map(a=>{
     const active=prod&&prod.allergens&&prod.allergens.includes(a)?'active':'';
@@ -835,7 +826,7 @@ function closeModal(){
   editingProduct=null;
 }
 
-function saveProduct(){
+async function saveProduct(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){toast('⚠️ Nome obrigatório');return;}
   const allergens=[...document.querySelectorAll('#modalForm .chip[data-allergen].active')].map(c=>c.dataset.allergen);
@@ -851,19 +842,28 @@ function saveProduct(){
   };
 
   if(editingProduct){
-    // Update existing
-    if(editingProduct.isCustom){
-      const c=DB.getCustomProducts(); c[editingProduct.id]={...c[editingProduct.id],...data}; DB.setCustomProducts(c);
-    } else {
-      const p=DB.getProducts(); p[editingProduct.id]={...p[editingProduct.id],...data}; DB.setProducts(p);
-    }
+    // Editar via Supabase
+    try{
+      await sbUpdateProduct(editingProduct.id,{
+        name:data.name, description:data.desc, price:data.price,
+        price_prefix:data.prefix, image_url:data.img,
+        calories:data.calories, allergens:data.allergens, tags:data.tags
+      });
+      // Atualiza cache local
+      const p=_sbProds.find(x=>x.id===editingProduct.id);
+      if(p) Object.assign(p,{name:data.name,desc:data.desc,price:data.price,prefix:data.prefix,img:data.img,calories:data.calories,allergens:data.allergens,tags:data.tags});
+    } catch(e){ toast('⚠️ Erro ao salvar'); return; }
   } else {
-    // New product
+    // Novo produto via Supabase
     const catId=document.getElementById('f-catId').value;
-    const id='custom_'+Date.now();
-    const catInfo=BASE_CATEGORIES.find(c=>c.id===catId);
-    data.catId=catId; data.catName=catInfo?.name||catId; data.catIcon=catInfo?.icon||'';
-    const c=DB.getCustomProducts(); c[id]=data; DB.setCustomProducts(c);
+    const catInfo=_sbCats.find(c=>c.id===catId)||{};
+    try{
+      const inserted=await sbInsertProduct({...data,catId,catSlug:catInfo.slug,catName:catInfo.name,catIcon:catInfo.icon});
+      if(inserted) _sbProds.unshift({
+        id:inserted.id,catId,catSlug:catInfo.slug||'',catName:catInfo.name||'',catIcon:catInfo.icon||'',
+        ...data,available:true,isSupabase:true
+      });
+    } catch(e){ toast('⚠️ Erro ao criar produto'); return; }
   }
 
   closeModal();
