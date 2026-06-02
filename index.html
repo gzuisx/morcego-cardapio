@@ -319,7 +319,13 @@ body::before{
 }
 .header-brand{
   display:flex;align-items:center;gap:.5rem;
-  position:absolute;left:50%;transform:translateX(-50%);
+  flex:1;justify-content:center;
+}
+@media(min-width:768px){
+  .header-brand{
+    position:absolute;left:50%;transform:translateX(-50%);
+    flex:none;justify-content:flex-start;
+  }
 }
 .header-bat{width:36px;height:26px;flex-shrink:0;position:relative}
 .header-bat svg{width:100%;height:100%}
