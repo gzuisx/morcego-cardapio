@@ -100,6 +100,46 @@ body{background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif;mi
 }
 #toast.show{transform:translateX(-50%) translateY(0)}
 
+/* POPUP NOVO PEDIDO */
+#newOrderPop{
+  position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;padding:1.5rem;
+}
+#newOrderPop.show{display:flex;animation:popIn .3s ease}
+@keyframes popIn{from{opacity:0}to{opacity:1}}
+.pop-card{
+  background:var(--card);border:2px solid var(--orange);border-radius:16px;
+  max-width:440px;width:100%;overflow:hidden;
+  box-shadow:0 0 50px rgba(246,166,35,.4);animation:popScale .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popScale{from{transform:scale(.8)}to{transform:scale(1)}}
+.pop-head{background:var(--orange);color:#07060a;padding:1rem 1.3rem;display:flex;align-items:center;gap:.6rem}
+.pop-head .pop-bell{font-size:1.6rem;animation:ring .6s ease infinite}
+@keyframes ring{0%,100%{transform:rotate(0)}25%{transform:rotate(15deg)}75%{transform:rotate(-15deg)}}
+.pop-title{font-family:'Jost',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.05em}
+.pop-mesa{margin-left:auto;font-family:'Playfair Display',serif;font-weight:700;font-size:1.4rem}
+.pop-body{padding:1.2rem 1.3rem;max-height:50vh;overflow-y:auto}
+.pop-item{display:flex;gap:.6rem;padding:.45rem 0;border-bottom:1px solid var(--bord);font-size:1rem}
+.pop-item:last-child{border-bottom:none}
+.pop-item-qty{font-family:'Playfair Display',serif;font-weight:700;color:var(--gold);min-width:2rem}
+.pop-extras{font-size:.75rem;color:var(--gold);font-family:'DM Mono',monospace}
+.pop-note{font-size:.78rem;color:var(--orange);font-style:italic;font-weight:600}
+.pop-actions{padding:1rem 1.3rem;display:flex;gap:.6rem;background:var(--bg3)}
+.pop-actions .btn{flex:1;justify-content:center;padding:.8rem;font-size:.9rem}
+
+/* STATUS EDIT MENU */
+.status-menu{position:relative}
+.status-btn{background:transparent;border:1px solid var(--bord2);color:var(--dim);border-radius:6px;padding:.3rem .5rem;font-size:.7rem;cursor:pointer}
+.status-dropdown{
+  position:absolute;top:100%;right:0;margin-top:4px;z-index:20;
+  background:var(--bg2);border:1px solid var(--bord2);border-radius:8px;
+  display:none;flex-direction:column;min-width:130px;overflow:hidden;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);
+}
+.status-dropdown.open{display:flex}
+.status-dropdown button{background:none;border:none;color:var(--cream);text-align:left;padding:.5rem .75rem;font-size:.78rem;cursor:pointer}
+.status-dropdown button:hover{background:var(--glow);color:var(--gold)}
+
 /* LOGIN */
 #loginWrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:9999;gap:1.2rem;padding:2rem}
 #loginWrap .logo{font-family:'Jost',sans-serif;font-weight:900;font-size:3rem;letter-spacing:.15em;color:#fff;-webkit-text-stroke:2px var(--gold);paint-order:stroke fill}
@@ -156,6 +196,22 @@ body{background:var(--bg);color:var(--cream);font-family:'DM Sans',sans-serif;mi
 </div><!-- /mainApp -->
 
 <div id="toast"></div>
+
+<!-- POPUP NOVO PEDIDO -->
+<div id="newOrderPop" onclick="if(event.target===this)closePop()">
+  <div class="pop-card">
+    <div class="pop-head">
+      <span class="pop-bell">🔔</span>
+      <span class="pop-title">NOVO PEDIDO</span>
+      <span class="pop-mesa" id="popMesa"></span>
+    </div>
+    <div class="pop-body" id="popBody"></div>
+    <div class="pop-actions">
+      <button class="btn btn-outline" onclick="closePop()">Fechar</button>
+      <button class="btn btn-gold" id="popPrepBtn">🟠 Aceitar / Preparar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══ AUTH ══
@@ -234,9 +290,21 @@ function buildCard(order){
     </div>`;
   }).join('');
   const st=order.status;
-  let actions='';
-  if(st==='new'||st==='pending') actions=`<button class="btn btn-gold" onclick="updateOrder('${order.id}','preparing')">🟠 Preparando</button>`;
-  else if(st==='preparing') actions=`<button class="btn btn-gold" onclick="updateOrder('${order.id}','ready')">🟢 Pronto</button>`;
+  let mainAction='';
+  if(st==='new'||st==='pending') mainAction=`<button class="btn btn-gold" onclick="updateOrder('${order.id}','preparing')">🟠 Preparando</button>`;
+  else if(st==='preparing') mainAction=`<button class="btn btn-gold" onclick="updateOrder('${order.id}','ready')">🟢 Pronto</button>`;
+  else if(st==='ready') mainAction=`<button class="btn btn-outline" onclick="updateOrder('${order.id}','delivered')">🔵 Entregue</button>`;
+  // Menu editar status (qualquer status)
+  const statusMenu=`<div class="status-menu">
+    <button class="status-btn" onclick="event.stopPropagation();toggleStatusMenu('${order.id}')">✏️ status</button>
+    <div class="status-dropdown" id="sd-${order.id}">
+      <button onclick="event.stopPropagation();updateOrder('${order.id}','new')">🟡 Novo</button>
+      <button onclick="event.stopPropagation();updateOrder('${order.id}','preparing')">🟠 Preparando</button>
+      <button onclick="event.stopPropagation();updateOrder('${order.id}','ready')">🟢 Pronto</button>
+      <button onclick="event.stopPropagation();updateOrder('${order.id}','delivered')">🔵 Entregue</button>
+      <button onclick="event.stopPropagation();updateOrder('${order.id}','cancelled')">❌ Cancelar</button>
+    </div>
+  </div>`;
   return `<div class="order-card${isNew&&(st==='new'||st==='pending')?' is-new':''}" onclick="markSeen('${order.id}');this.classList.remove('is-new')">
     <div class="card-head">
       <div class="card-mesa">Mesa ${order.table}</div>
@@ -244,9 +312,18 @@ function buildCard(order){
       <div class="card-time">${timeStr}</div>
     </div>
     <div class="card-items">${items}</div>
-    ${actions?`<div class="card-actions">${actions}</div>`:''}
+    <div class="card-actions">${mainAction}${statusMenu}</div>
   </div>`;
 }
+function toggleStatusMenu(id){
+  const dd=document.getElementById('sd-'+id);
+  const wasOpen=dd.classList.contains('open');
+  document.querySelectorAll('.status-dropdown').forEach(d=>d.classList.remove('open'));
+  if(!wasOpen) dd.classList.add('open');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.status-menu')) document.querySelectorAll('.status-dropdown').forEach(d=>d.classList.remove('open'));
+});
 
 function render(){
   const orders=getOrders();
@@ -270,6 +347,26 @@ function toast(msg){
   setTimeout(()=>el.classList.remove('show'),2000);
 }
 
+// ══ POPUP NOVO PEDIDO ══
+let _popOrderId=null;
+function showPop(order){
+  _popOrderId=order.id;
+  document.getElementById('popMesa').textContent='Mesa '+order.table;
+  document.getElementById('popBody').innerHTML=order.items.map(i=>{
+    const ex=i.extras&&i.extras.length?`<div class="pop-extras">+ ${i.extras.map(e=>e.name).join(', ')}</div>`:'';
+    const nt=i.note?`<div class="pop-note">✏️ ${i.note}</div>`:'';
+    return `<div class="pop-item"><span class="pop-item-qty">${i.qty}x</span><span>${i.name}${ex}${nt}</span></div>`;
+  }).join('');
+  document.getElementById('popPrepBtn').onclick=()=>{ updateOrder(order.id,'preparing'); closePop(); };
+  document.getElementById('newOrderPop').classList.add('show');
+  // repete o som 2x pra chamar atenção
+  setTimeout(playSound,700);
+}
+function closePop(){
+  document.getElementById('newOrderPop').classList.remove('show');
+  if(_popOrderId){ markSeen(_popOrderId); render(); _popOrderId=null; }
+}
+
 function playSound(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -288,20 +385,28 @@ function startKitchen(){
   // Realtime Supabase
   sbOnNewOrder((newOrder, updateEvent)=>{
     if(newOrder && !updateEvent){
-      if(!seenIds.has(newOrder.id)) playSound();
+      if(!seenIds.has(newOrder.id)){ playSound(); showPop(newOrder); }
       _orders.unshift(newOrder);
     } else if(updateEvent){
       const o=_orders.find(x=>x.id===updateEvent.id);
       if(o) o.status=updateEvent.status;
+      else { _orders.unshift({id:updateEvent.id,table:updateEvent.table_number,items:updateEvent.items,status:updateEvent.status,timestamp:updateEvent.created_at}); }
     }
     render();
   });
-  // Countdown UI + fallback refresh
-  let countdown=30;
+  // Countdown UI + fallback refresh (detecta novos se realtime falhar)
+  let countdown=15;
   setInterval(async()=>{
     countdown--;
     document.getElementById('refreshTxt').textContent=`Atualiza em ${countdown}s`;
-    if(countdown<=0){ await loadOrders(); render(); countdown=30; }
+    if(countdown<=0){
+      const prevIds=new Set(_orders.map(o=>o.id));
+      await loadOrders();
+      // novo pedido nao visto que apareceu no refresh
+      const fresh=_orders.find(o=>!prevIds.has(o.id)&&!seenIds.has(o.id)&&(o.status==='new'||o.status==='pending'));
+      if(fresh){ playSound(); showPop(fresh); }
+      render(); countdown=15;
+    }
   },1000);
   // Init
   loadOrders().then(render);

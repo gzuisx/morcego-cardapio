@@ -956,14 +956,10 @@ function renderCart(){
     return;
   }
   empty.style.display='none'; totalEl.style.display='flex';
-  // Mesa sempre obrigatória — mostra input se ainda não definida
-  if(!currentMesa){
-    mesaRow.style.display='flex';
-    const f=document.getElementById('cartMesaField');
-    if(f&&!f.value) f.value='';
-  } else {
-    mesaRow.style.display='none';
-  }
+  // Mesa SEMPRE visível e obrigatória — preenche se já tem
+  mesaRow.style.display='flex';
+  const f=document.getElementById('cartMesaField');
+  if(f && currentMesa && !f.value) f.value=currentMesa;
 
   let total=0;
   container.innerHTML=cart.map((it,i)=>{
@@ -997,19 +993,17 @@ function cartQty(i,delta){
 }
 async function sendOrder(){
   if(!cart.length) return;
-  // Mesa SEMPRE obrigatória
-  if(!currentMesa){
-    const field=document.getElementById('cartMesaField');
-    const val=field?.value?.trim();
-    if(!val||parseInt(val)<1){
-      field?.focus();
-      field?.classList.add('shake');
-      setTimeout(()=>field?.classList.remove('shake'),500);
-      return;
-    }
-    currentMesa=val;
-    sessionStorage.setItem('morcego_mesa',currentMesa);
+  // Mesa SEMPRE obrigatória — lê do campo no carrinho
+  const field=document.getElementById('cartMesaField');
+  const val=field?.value?.trim();
+  if(!val||parseInt(val)<1){
+    field?.focus();
+    field?.classList.add('shake');
+    setTimeout(()=>field?.classList.remove('shake'),500);
+    return;
   }
+  currentMesa=val;
+  sessionStorage.setItem('morcego_mesa',currentMesa);
   const mesa=currentMesa;
   const order={
     id:Date.now().toString(),
@@ -1823,9 +1817,21 @@ setInterval(updateStatus, 60000);
   initShareUrl();
 })();
 
-// ══ PWA SERVICE WORKER ══
+// ══ PWA SERVICE WORKER — auto-update ══
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      nw&&nw.addEventListener('statechange',()=>{
+        if(nw.state==='activated') location.reload();
+      });
+    });
+  }).catch(()=>{});
+  // Recarrega ao trocar de controller (novo SW assumiu)
+  let _reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(_reloaded) return; _reloaded=true; location.reload();
+  });
 }
 </script>
 </body>
