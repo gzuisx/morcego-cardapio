@@ -107,6 +107,14 @@ async function sbGetUser(){
   const {data} = await getSB().auth.getUser();
   return data?.user||null;
 }
+async function sbGetMyRole(){
+  const user = await sbGetUser();
+  if(!user) return null;
+  try{
+    const {data} = await getSB().from('user_roles').select('role,name').eq('user_id',user.id).maybeSingle();
+    return data?.role || 'admin'; // fallback admin (compat)
+  }catch(e){ return 'admin'; }
+}
 
 // ══ RESTAURANT / CATEGORIES / PRODUCTS ══
 let _restaurantId = null;

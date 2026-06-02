@@ -165,6 +165,7 @@ function enterApp(){
   document.getElementById('mainApp').style.display='block';
   if(!_started){ _started=true; startKitchen(); }
 }
+const COZINHA_ROLES=['admin','cozinha','garcom'];
 async function doLogin(){
   const email=document.getElementById('emailInput').value.trim();
   const pw=document.getElementById('pwInput').value;
@@ -173,9 +174,14 @@ async function doLogin(){
   if(!email||!pw){errEl.textContent='Preencha email e senha.';return;}
   btn.textContent='Entrando...';btn.disabled=true;
   const res=await sbSignIn(email,pw);
-  btn.textContent='Entrar';btn.disabled=false;
-  if(res.ok) enterApp();
-  else{errEl.textContent='Email ou senha incorretos.';setTimeout(()=>errEl.textContent='',2500);}
+  if(res.ok){
+    const role=await sbGetMyRole()||'admin';
+    if(COZINHA_ROLES.includes(role)){ btn.textContent='Entrar';btn.disabled=false; enterApp(); }
+    else{ await sbSignOut(); btn.textContent='Entrar';btn.disabled=false; errEl.textContent='Sem acesso à cozinha.'; setTimeout(()=>errEl.textContent='',2500); }
+  } else {
+    btn.textContent='Entrar';btn.disabled=false;
+    errEl.textContent='Email ou senha incorretos.';setTimeout(()=>errEl.textContent='',2500);
+  }
 }
 document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('emailInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
