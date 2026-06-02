@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MORCEGO — Cardápio</title>
+<title>MOCERGO — Cardápio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Creepster&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -92,9 +92,9 @@ body::before{
 @keyframes sonar{0%{transform:scale(.7);opacity:.65}100%{transform:scale(3);opacity:0}}
 
 .hero-title{
-  font-family:'Creepster',cursive;
-  font-size:clamp(4.5rem,20vw,9rem);
-  font-weight:400;letter-spacing:.12em;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(5rem,22vw,10rem);
+  font-weight:400;letter-spacing:.18em;
   color:var(--cream);text-align:center;line-height:1;
   text-shadow:0 0 60px rgba(201,162,39,.5),0 0 120px rgba(201,162,39,.2);
 }
@@ -205,7 +205,7 @@ body::before{
   padding:2rem;
 }
 #mesaScreen.show{display:flex}
-.mesa-logo{font-family:'Creepster',cursive;font-size:clamp(3rem,14vw,6rem);color:var(--cream);letter-spacing:.12em;text-shadow:0 0 40px rgba(201,162,39,.4);margin-bottom:.5rem}
+.mesa-logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,14vw,6rem);color:var(--cream);letter-spacing:.18em;text-shadow:0 0 40px rgba(201,162,39,.4);margin-bottom:.5rem}
 .mesa-sub{font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace;margin-bottom:2rem}
 .mesa-label{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace;margin-bottom:.5rem}
 #mesaInput{
@@ -323,9 +323,9 @@ body::before{
 .sonar-h3{animation-delay:2s}
 @keyframes sonarH{0%{transform:translate(-50%,-50%) scale(.5);opacity:.6}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}}
 .header-name{
-  font-family:'Creepster',cursive;
-  font-size:1.4rem;font-weight:400;
-  letter-spacing:.12em;color:var(--gold);
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.6rem;font-weight:400;
+  letter-spacing:.18em;color:var(--gold);
   text-transform:uppercase;line-height:1;
   text-shadow:0 0 12px rgba(201,162,39,.4);
 }
@@ -591,7 +591,7 @@ body::before{
 
 <!-- ════ MESA SCREEN ════ -->
 <div id="mesaScreen">
-  <div class="mesa-logo">MORCEGO</div>
+  <div class="mesa-logo">MOCERGO</div>
   <div class="mesa-sub">Lanchonete · Santo André</div>
   <div class="mesa-label">Qual é o número da sua mesa?</div>
   <input id="mesaInput" type="number" min="1" max="99" placeholder="—">
@@ -637,7 +637,7 @@ body::before{
 
 <!-- ════ HERO ════ -->
 <div id="hero">
-  <h1 class="hero-title">MORCEGO</h1>
+  <h1 class="hero-title">MOCERGO</h1>
   <p class="hero-sub">Lanchonete · Santo André · SP</p>
   <p class="hero-address">📍 R. Siqueira Campos, 1039 — Centro, Santo André &nbsp;·&nbsp; QUI–SAB 18h/01h &nbsp;·&nbsp; DOM 17h/22h</p>
   <button class="hero-cta" id="heroCta">Ver Cardápio</button>
@@ -651,18 +651,10 @@ body::before{
   <header class="header">
     <div class="header-inner">
       <div class="header-bat">
-        <svg viewBox="-32 -30 64 36" fill="none" width="40" height="28">
-          <path d="M-6,2 C-14,-6 -28,-10 -30,-5 C-26,0 -16,4 -7,5Z" fill="#c9a227"/>
-          <path d="M6,2 C14,-6 28,-10 30,-5 C26,0 16,4 7,5Z" fill="#c9a227"/>
-          <polygon points="-4,-12 -10,-28 0,-14" fill="#c9a227"/>
-          <polygon points="4,-12 10,-28 0,-14" fill="#c9a227"/>
-          <ellipse cx="0" cy="-4" rx="8" ry="10" fill="#c9a227"/>
-          <circle cx="-3.5" cy="-6" r="2" fill="#cc2211" opacity=".9"/>
-          <circle cx="3.5" cy="-6" r="2" fill="#cc2211" opacity=".9"/>
-        </svg>
+        <img src="logo.png" alt="Mocergo" width="40" height="40" style="border-radius:8px;object-fit:cover;display:block;">
       </div>
       <div>
-        <div class="header-name">Morcego</div>
+        <div class="header-name">Mocergo</div>
       </div>
       <div class="header-status">
         <span class="dot" id="statusDot"></span>
@@ -1520,7 +1512,7 @@ function openModal(item,cat){
   // WhatsApp link
   const wppBtn = document.getElementById('modalWpp');
   if(WPP_NUMBER){
-    const wppMsg = encodeURIComponent(`Olá! Quero pedir:\n*${item.name}* — ${item.price}\n\nCardápio: MORCEGO Lanchonete, Santo André`);
+    const wppMsg = encodeURIComponent(`Olá! Quero pedir:\n*${item.name}* — ${item.price}\n\nCardápio: MOCERGO Lanchonete, Santo André`);
     wppBtn.href=`https://wa.me/${WPP_NUMBER}?text=${wppMsg}`;
     wppBtn.style.display='';
   } else {

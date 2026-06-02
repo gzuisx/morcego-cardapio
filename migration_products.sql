@@ -74,7 +74,7 @@ declare
 begin
 
 -- Restaurant
-insert into restaurants (name, slug) values ('Morcego Lanchonete', 'morcego')
+insert into restaurants (name, slug) values ('Mocergo Lanchonete', 'morcego')
 on conflict (slug) do update set name=excluded.name returning id into rid;
 
 -- Categories

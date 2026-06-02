@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Morcego — Painel do Dono</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="db.js"></script>
 <style>
@@ -27,7 +27,7 @@ textarea{resize:vertical;min-height:60px}
 
 /* ══ LOGIN ══ */
 #loginWrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:9999;gap:1.5rem;padding:2rem}
-.login-logo{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;color:var(--gold);letter-spacing:.2em;text-shadow:0 0 30px rgba(201,162,39,.4)}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:3.2rem;font-weight:400;color:var(--gold);letter-spacing:.22em;text-shadow:0 0 30px rgba(201,162,39,.4)}
 .login-sub{font-size:.7rem;letter-spacing:.35em;text-transform:uppercase;color:var(--dim);font-family:'DM Mono',monospace}
 .login-box{width:100%;max-width:340px;display:flex;flex-direction:column;gap:.75rem}
 .login-box input{font-size:.95rem;padding:.75rem 1rem;text-align:center;letter-spacing:.15em}
@@ -52,7 +52,7 @@ textarea{resize:vertical;min-height:60px}
   background:var(--bg2);border-bottom:1px solid var(--bord);
   flex-shrink:0;position:sticky;top:0;z-index:100;
 }
-.topbar-logo{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:900;color:var(--gold);letter-spacing:.15em}
+.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;font-weight:400;color:var(--gold);letter-spacing:.2em}
 .topbar-title{font-size:.72rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;font-family:'DM Mono',monospace}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:.5rem}
 .badge{display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-weight:700;line-height:1}
@@ -217,7 +217,7 @@ textarea{resize:vertical;min-height:60px}
 
 <!-- ════ LOGIN ════ -->
 <div id="loginWrap">
-  <div class="login-logo">MORCEGO</div>
+  <div class="login-logo">MOCERGO</div>
   <div class="login-sub">Painel do Dono</div>
   <div class="login-box">
     <input type="password" id="pwInput" placeholder="Senha de acesso" autocomplete="current-password">
@@ -231,7 +231,7 @@ textarea{resize:vertical;min-height:60px}
 <div id="app">
   <div class="topbar">
     <div>
-      <div class="topbar-logo">MORCEGO</div>
+      <div class="topbar-logo">MOCERGO</div>
       <div class="topbar-title">Painel do Dono</div>
     </div>
     <div class="topbar-right">
