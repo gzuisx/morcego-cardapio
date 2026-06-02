@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset — Mocergo</title>
+<style>
+body{background:#09080c;color:#ede5d0;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:2rem;text-align:center;gap:1rem}
+h1{color:#c9a227}
+.status{font-size:.95rem;line-height:1.6}
+a{display:inline-block;margin-top:1rem;background:#c9a227;color:#09080c;text-decoration:none;padding:.8rem 1.6rem;border-radius:50px;font-weight:700}
+.ok{color:#3ecf6e}
+</style>
+</head>
+<body>
+<h1>🦇 Limpando…</h1>
+<div class="status" id="status">Removendo versão antiga…</div>
+<a href="index.html" id="goBtn" style="display:none">Abrir Cardápio Atualizado</a>
+<script>
+(async()=>{
+  const s=document.getElementById('status');
+  const log=[];
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const r of regs){ await r.unregister(); }
+      log.push('✅ Service Workers removidos ('+regs.length+')');
+    }
+  }catch(e){ log.push('SW: '+e.message); }
+  try{
+    if('caches' in window){
+      const keys=await caches.keys();
+      for(const k of keys){ await caches.delete(k); }
+      log.push('✅ Cache limpo ('+keys.length+')');
+    }
+  }catch(e){ log.push('Cache: '+e.message); }
+  s.innerHTML='<span class="ok">'+log.join('<br>')+'</span><br><br>Pronto! Agora abra o cardápio.';
+  document.getElementById('goBtn').style.display='inline-block';
+})();
+</script>
+</body>
+</html>
