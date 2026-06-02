@@ -278,7 +278,27 @@ body::before{
 .cart-header{padding:1rem 1.2rem;border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between}
 .cart-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700}
 .cart-mesa{font-size:.65rem;color:var(--dim);font-family:'DM Mono',monospace}
-.cart-item-row{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.2rem;border-bottom:1px solid var(--bord)}
+.cart-item-row{display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 1.2rem;border-bottom:1px solid var(--bord)}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-extras{font-size:.65rem;color:var(--gold);font-family:'DM Mono',monospace;margin-top:3px;line-height:1.4}
+.cart-note{
+  width:100%;background:transparent;border:none;border-bottom:1px dashed var(--bord2);
+  color:var(--dim);font-size:.73rem;padding:.3rem 0;margin-top:.4rem;
+  font-family:'DM Sans',sans-serif;outline:none;
+}
+.cart-note::placeholder{color:var(--dim);opacity:.6}
+.cart-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0}
+.cart-item-price{font-size:.82rem;color:var(--gold);font-family:'DM Mono',monospace;white-space:nowrap}
+.extra-chip.add-chip{cursor:pointer}
+.extra-chip.add-chip.selected{border-color:var(--gold);background:var(--glow);color:var(--gold)}
+.extra-chip.add-chip.selected::before{content:'✓ ';font-size:.6rem}
+.modal-note-input{
+  width:100%;background:var(--bg2);border:1px solid var(--bord);border-radius:8px;
+  padding:.6rem .8rem;color:var(--cream);font-size:.82rem;font-family:'DM Sans',sans-serif;
+  outline:none;
+}
+.modal-note-input:focus{border-color:var(--gold2)}
+.modal-note-input::placeholder{color:var(--dim)}
 .cart-item-name{flex:1;font-size:.82rem}
 .cart-item-price{font-size:.78rem;color:var(--gold);font-family:'DM Mono',monospace;white-space:nowrap}
 .cart-qty{display:flex;align-items:center;gap:.4rem}
@@ -883,9 +903,26 @@ function initShareUrl(){
 document.getElementById('mesaInput').addEventListener('keydown',e=>{if(e.key==='Enter')confirmMesa();});
 
 // ══ CART ══
-function addToCart(item,cat){
-  const existing=cart.find(c=>c.name===item.name);
-  if(existing){existing.qty++;} else {cart.push({name:item.name,price:item.price,qty:1,catId:cat.id});}
+function parsePrice(str){
+  const n=parseFloat((str||'').replace(/[^0-9,]/g,'').replace(',','.'));
+  return isNaN(n)?0:n;
+}
+function fmtPrice(n){return 'R$ '+n.toFixed(2).replace('.',',');}
+
+function addToCart(item,cat,extras){
+  const ex=extras||{chosen:[],addPrice:0,note:''};
+  const basePrice=parsePrice(item.price);
+  const unitPrice=basePrice+ex.addPrice;
+  // Itens com extras/nota são sempre linhas separadas (não agrupam)
+  const hasCustom=ex.chosen.length>0||ex.note;
+  if(!hasCustom){
+    const existing=cart.find(c=>c.name===item.name&&!c.chosen?.length&&!c.note);
+    if(existing){existing.qty++;updateCartBtn();flashCartBtn();return;}
+  }
+  cart.push({
+    name:item.name, price:item.price, basePrice, unitPrice,
+    qty:1, catId:cat.id, chosen:ex.chosen, note:ex.note
+  });
   updateCartBtn();
   flashCartBtn();
 }
@@ -919,29 +956,40 @@ function renderCart(){
     return;
   }
   empty.style.display='none'; totalEl.style.display='flex';
-  // Mostra input de mesa se modo mesa ativo e mesa não definida ainda
-  if(_adminSettings.tableModeEnabled && !currentMesa){
+  // Mesa sempre obrigatória — mostra input se ainda não definida
+  if(!currentMesa){
     mesaRow.style.display='flex';
+    const f=document.getElementById('cartMesaField');
+    if(f&&!f.value) f.value='';
   } else {
     mesaRow.style.display='none';
   }
 
   let total=0;
   container.innerHTML=cart.map((it,i)=>{
-    const val=parseFloat((it.price||'').replace(/[^0-9,]/g,'').replace(',','.'));
-    const sub=isNaN(val)?0:val*it.qty; total+=sub;
+    const unit=it.unitPrice!=null?it.unitPrice:parsePrice(it.price);
+    const sub=unit*it.qty; total+=sub;
+    const extrasHtml=it.chosen&&it.chosen.length
+      ? `<div class="cart-item-extras">+ ${it.chosen.map(c=>c.name).join(', ')}</div>` : '';
     return `<div class="cart-item-row">
-      <div class="cart-item-name">${it.name}</div>
-      <div class="cart-qty">
-        <button onclick="cartQty(${i},-1)">−</button>
-        <span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center">${it.qty}</span>
-        <button onclick="cartQty(${i},1)">+</button>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${it.name}</div>
+        ${extrasHtml}
+        <input class="cart-note" type="text" placeholder="✏️ observação (ex: sem cebola)" value="${(it.note||'').replace(/"/g,'&quot;')}" oninput="updateNote(${i},this.value)">
       </div>
-      <div class="cart-item-price">${it.price}</div>
+      <div class="cart-item-right">
+        <div class="cart-item-price">${fmtPrice(sub)}</div>
+        <div class="cart-qty">
+          <button onclick="cartQty(${i},-1)">−</button>
+          <span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center">${it.qty}</span>
+          <button onclick="cartQty(${i},1)">+</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
-  document.getElementById('cartTotalVal').textContent='R$ '+total.toFixed(2).replace('.',',');
+  document.getElementById('cartTotalVal').textContent=fmtPrice(total);
 }
+function updateNote(i,val){ if(cart[i]) cart[i].note=val; }
 function cartQty(i,delta){
   cart[i].qty+=delta;
   if(cart[i].qty<=0) cart.splice(i,1);
@@ -949,8 +997,8 @@ function cartQty(i,delta){
 }
 async function sendOrder(){
   if(!cart.length) return;
-  // Se modo mesa ativo e sem mesa definida, pegar do input no cart
-  if(_adminSettings.tableModeEnabled && !currentMesa){
+  // Mesa SEMPRE obrigatória
+  if(!currentMesa){
     const field=document.getElementById('cartMesaField');
     const val=field?.value?.trim();
     if(!val||parseInt(val)<1){
@@ -962,11 +1010,14 @@ async function sendOrder(){
     currentMesa=val;
     sessionStorage.setItem('morcego_mesa',currentMesa);
   }
-  const mesa=currentMesa||'balcão';
+  const mesa=currentMesa;
   const order={
     id:Date.now().toString(),
     table:mesa,
-    items:cart.map(c=>({name:c.name,price:c.price,qty:c.qty})),
+    items:cart.map(c=>({
+      name:c.name, price:c.price, qty:c.qty,
+      unitPrice:c.unitPrice, extras:c.chosen||[], note:c.note||''
+    })),
     timestamp:new Date().toISOString(),
     status:'new'
   };
@@ -1524,18 +1575,18 @@ function buildExtras(extras){
   if(!extras||!extras.length) return '';
   return extras.map(section=>{
     const isSelect = section.type === 'select';
+    const isAdd = section.type === 'add';
     const chips = section.opts.map((opt,i)=>{
-      const priceHtml = opt.price
-        ? `<span class="extra-price">${opt.price}</span>`
-        : '';
-      const freeClass = opt.price && opt.price.toLowerCase().includes('grát') ? ' free' : '';
-      const selectClass = isSelect ? ' select-chip' : '';
-      const selectedClass = isSelect && i===0 ? ' selected' : '';
-      return `<button class="extra-chip${freeClass}${selectClass}${selectedClass}" data-section="${section.title}">${opt.name}${priceHtml}</button>`;
+      const priceHtml = opt.price ? `<span class="extra-price">${opt.price}</span>` : '';
+      const freeClass = opt.price&&opt.price.toLowerCase().includes('grát')?' free':'';
+      const typeClass = isSelect?' select-chip':isAdd?' add-chip':'';
+      const selectedClass = isSelect&&i===0?' selected':'';
+      return `<button class="extra-chip${freeClass}${typeClass}${selectedClass}" data-section="${section.title}" data-price="${opt.price||''}">${opt.name}${priceHtml}</button>`;
     }).join('');
-    const typeHint = isSelect ? '<span style="font-size:.5rem;color:var(--dim);margin-left:.4rem;text-transform:none;letter-spacing:0">escolha</span>' : '';
+    const hint = isSelect?'<span style="font-size:.5rem;color:var(--dim);margin-left:.4rem;text-transform:none;letter-spacing:0">escolha um</span>':
+                 isAdd?'<span style="font-size:.5rem;color:var(--dim);margin-left:.4rem;text-transform:none;letter-spacing:0">toque para adicionar</span>':'';
     return `<div class="extras-section">
-      <div class="extras-section-title">${section.title}${typeHint}</div>
+      <div class="extras-section-title">${section.title}${hint}</div>
       <div class="extras-chips">${chips}</div>
     </div>`;
   }).join('');
@@ -1559,7 +1610,11 @@ function openModal(item,cat){
   if(cal) infoHtml+=`<span style="font-size:.7rem;color:var(--dim);font-family:'DM Mono',monospace;display:block;margin-bottom:.35rem">🔥 ${cal} kcal</span>`;
   if(aller.length) infoHtml+=`<span style="font-size:.68rem;color:var(--dim);font-family:'DM Mono',monospace;display:block;margin-bottom:.35rem">⚠️ Contém: ${aller.join(', ')}</span>`;
 
-  document.getElementById('modalExtras').innerHTML=infoHtml+buildExtras(item.extras);
+  const noteHtml=`<div class="extras-section" style="margin-top:.4rem">
+    <div class="extras-section-title">OBSERVAÇÃO<span style="font-size:.5rem;color:var(--dim);margin-left:.4rem;text-transform:none;letter-spacing:0">ex: sem cebola, sem gelo…</span></div>
+    <input id="modalNote" class="modal-note-input" type="text" placeholder="Alguma observação para a cozinha?" value="">
+  </div>`;
+  document.getElementById('modalExtras').innerHTML=infoHtml+buildExtras(item.extras)+noteHtml;
   imgWrap.innerHTML='';
   const img=document.createElement('img');
   img.src=item.img; img.alt=item.name;
@@ -1597,6 +1652,7 @@ function openModal(item,cat){
 
   overlay.classList.add('open');
   document.body.style.overflow='hidden';
+  // select: escolhe um (radio)
   document.getElementById('modalExtras').querySelectorAll('.select-chip').forEach(chip=>{
     chip.addEventListener('click',()=>{
       const sec=chip.dataset.section;
@@ -1604,6 +1660,27 @@ function openModal(item,cat){
       chip.classList.add('selected');
     });
   });
+  // add: toggle múltiplos (checkbox)
+  document.getElementById('modalExtras').querySelectorAll('.add-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>chip.classList.toggle('selected'));
+  });
+}
+
+// Lê extras selecionados + nota do modal aberto
+function collectModalExtras(){
+  const box=document.getElementById('modalExtras');
+  const chosen=[];
+  let addPrice=0;
+  box.querySelectorAll('.extra-chip.selected').forEach(chip=>{
+    const name=chip.childNodes[0]?.textContent?.trim()||chip.textContent.trim();
+    const priceStr=chip.dataset.price||'';
+    // só soma se for adicional pago (não "grátis", não "incluso")
+    const num=parseFloat(priceStr.replace(/[^0-9,]/g,'').replace(',','.'));
+    if(!isNaN(num)&&priceStr.includes('+')) addPrice+=num;
+    chosen.push({name, price:priceStr});
+  });
+  const note=document.getElementById('modalNote')?.value?.trim()||'';
+  return {chosen, addPrice, note};
 }
 
 // ── Voted state por device (localStorage) ──
@@ -1663,9 +1740,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 document.getElementById('modalOrderBtn').addEventListener('click',()=>{
   if(navigator.vibrate) navigator.vibrate([15,10,15]);
   if(currentItem&&currentCat){
-    addToCart(currentItem,currentCat);
+    const extras=collectModalExtras();
+    addToCart(currentItem,currentCat,extras);
     closeModal();
-    // Feedback visual
     const btn=document.getElementById('cartBtn');
     btn.style.transform='scale(1.3)';
     setTimeout(()=>btn.style.transform='',400);

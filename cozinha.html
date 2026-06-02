@@ -176,11 +176,14 @@ function buildCard(order){
   const t=new Date(order.timestamp);
   const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
   const el=elapsed(order.timestamp);
-  const items=order.items.map(i=>`
-    <div class="item-row">
+  const items=order.items.map(i=>{
+    const ex=i.extras&&i.extras.length?`<div style="font-size:.7rem;color:var(--gold);font-family:'DM Mono',monospace;margin-top:2px">+ ${i.extras.map(e=>e.name).join(', ')}</div>`:'';
+    const nt=i.note?`<div style="font-size:.72rem;color:var(--orange);font-style:italic;margin-top:2px;font-weight:600">✏️ ${i.note}</div>`:'';
+    return `<div class="item-row">
       <div class="item-qty">${i.qty}x</div>
-      <div class="item-name">${i.name}</div>
-    </div>`).join('');
+      <div class="item-name">${i.name}${ex}${nt}</div>
+    </div>`;
+  }).join('');
   const st=order.status;
   let actions='';
   if(st==='new'||st==='pending') actions=`<button class="btn btn-gold" onclick="updateOrder('${order.id}','preparing')">🟠 Preparando</button>`;
