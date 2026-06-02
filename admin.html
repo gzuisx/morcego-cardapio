@@ -697,10 +697,11 @@ function getAllProducts(){
       if(!ov.deleted){
         all.push({
           id, catId:cat.id, catName:cat.name, catIcon:cat.icon,
-          name:ov.name||item.name,
-          desc:ov.desc||item.desc||'',
-          price:ov.price||item.price||'',
-          img:ov.img||item.img||'',
+          name:ov.name!==undefined?ov.name:item.name,
+          desc:ov.desc!==undefined?ov.desc:(item.desc||''),
+          price:ov.price!==undefined?ov.price:(item.price||''),
+          prefix:ov.prefix!==undefined?ov.prefix:(item.prefix||''),
+          img:ov.img!==undefined?ov.img:(item.img||''),
           tags:ov.tags||[],
           calories:ov.calories||null,
           allergens:ov.allergens||[],
