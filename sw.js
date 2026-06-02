@@ -1,10 +1,9 @@
-const CACHE = 'morcego-v1';
-const PRECACHE = ['./index.html', './admin.html', './manifest.json'];
+const CACHE = 'mocergo-v2';
+// Só cacheia assets estáticos (fontes, imagens CDN) — nunca HTML
+const ASSET_ORIGINS = ['fonts.googleapis.com','fonts.gstatic.com','zig-public.zig.fun','zig-public-files.zig.fun'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
@@ -17,26 +16,26 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('fonts.googleapis') || e.request.url.includes('fonts.gstatic') || e.request.url.includes('zig-public')) {
+
+  const url = new URL(e.request.url);
+
+  // Assets externos (fontes, imagens CDN) → cache-first
+  if (ASSET_ORIGINS.some(o => url.hostname.includes(o))) {
     e.respondWith(
       caches.open(CACHE).then(c =>
-        c.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-          if (res.ok) c.put(e.request, res.clone());
-          return res;
-        }))
+        c.match(e.request).then(cached =>
+          cached || fetch(e.request).then(res => {
+            if (res.ok) c.put(e.request, res.clone());
+            return res;
+          })
+        )
       )
     );
     return;
   }
+
+  // HTML e tudo mais → network-first (sempre pega versão nova)
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const network = fetch(e.request).then(res => {
-        if (res.ok && res.type !== 'opaque') {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
